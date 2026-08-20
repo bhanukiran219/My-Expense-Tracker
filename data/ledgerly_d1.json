@@ -1,0 +1,228 @@
+{
+  "transactions": [
+    {
+      "id": "6e69e1f9-cb0e-4c7c-b1a2-37153b4f7b73",
+      "date": "2026-08-18",
+      "merchant": "Acme Property Management (Rent)",
+      "category": "Housing",
+      "amount": 2400,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"Fixed\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-18|acme property management (rent)|2400.00|main checking",
+      "createdAt": "2026-08-20T02:05:01.346Z"
+    },
+    {
+      "id": "6e55f0a8-ca51-46cd-96f1-a1eafc7d4807",
+      "date": "2026-08-17",
+      "merchant": "TechCorp Bi-Weekly Payroll",
+      "category": "Income",
+      "amount": 4350,
+      "type": "income",
+      "account": "Main Checking",
+      "tags": "[\"Salary\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-17|techcorp bi-weekly payroll|4350.00|main checking",
+      "createdAt": "2026-08-20T02:05:01.383Z"
+    },
+    {
+      "id": "f936f6b1-8bd6-491e-ba55-e532d3253ff3",
+      "date": "2026-08-16",
+      "merchant": "Whole Foods Market",
+      "category": "Groceries",
+      "amount": 142.35,
+      "type": "expense",
+      "account": "Everyday Visa",
+      "tags": "[\"Food\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-16|whole foods market|142.35|everyday visa",
+      "createdAt": "2026-08-20T02:05:01.466Z"
+    },
+    {
+      "id": "b6dd2f01-c012-4d3f-8c94-83055d9456c7",
+      "date": "2026-08-10",
+      "merchant": "Netflix Subscription",
+      "category": "Entertainment",
+      "amount": 19.99,
+      "type": "expense",
+      "account": "Everyday Visa",
+      "tags": "[\"Streaming\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-10|netflix subscription|19.99|everyday visa",
+      "createdAt": "2026-08-20T02:05:01.507Z"
+    },
+    {
+      "id": "ad6af339-ac52-4466-bc66-fc1b40b13869",
+      "date": "2026-08-06",
+      "merchant": "Spotify Premium",
+      "category": "Entertainment",
+      "amount": 10.99,
+      "type": "expense",
+      "account": "Everyday Visa",
+      "tags": "[\"Streaming\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-06|spotify premium|10.99|everyday visa",
+      "createdAt": "2026-08-20T02:05:01.527Z"
+    },
+    {
+      "id": "d72bc013-16f7-45cb-bca4-be4aa7a8c86f",
+      "date": "2026-08-02",
+      "merchant": "Trader Joe’s",
+      "category": "Groceries",
+      "amount": 88.42,
+      "type": "expense",
+      "account": "Everyday Visa",
+      "tags": "[\"Food\"]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-02|trader joe’s|88.42|everyday visa",
+      "createdAt": "2026-08-20T02:05:01.553Z"
+    },
+    {
+      "id": "c88ab260-138e-45c5-900b-ca1f87a6ae49",
+      "date": "2026-08-19",
+      "merchant": "Blue Bottle Coffee",
+      "category": "Dining",
+      "amount": 7.25,
+      "type": "expense",
+      "account": "Everyday Visa",
+      "tags": "[]",
+      "receipt": 0,
+      "source": "manual",
+      "fingerprint": "2026-08-19|blue bottle coffee|7.25|everyday visa",
+      "createdAt": "2026-08-20T02:05:01.577Z"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Salary",
+      "createdAt": "2026-08-19T04:34:41.276Z"
+    },
+    {
+      "name": "Income",
+      "createdAt": "2026-08-19T04:35:15.537Z"
+    },
+    {
+      "name": "CSV Import",
+      "createdAt": "2026-08-19T04:41:06.845Z"
+    },
+    {
+      "name": "Fixed",
+      "createdAt": "2026-08-20T02:05:01.032Z"
+    },
+    {
+      "name": "Food",
+      "createdAt": "2026-08-20T02:05:01.428Z"
+    },
+    {
+      "name": "Streaming",
+      "createdAt": "2026-08-20T02:05:01.490Z"
+    }
+  ],
+  "rules": [],
+  "documents": [],
+  "settings": {
+    "categories": {
+      "value": "[\"Housing\",\"Groceries\",\"Shopping\",\"Dining\",\"Transportation\",\"Utilities\",\"Subscriptions\",\"Insurance\",\"Health\",\"Entertainment\",\"Income\",\"Needs review\",\"Other\",\"Movies\"]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "accounts": {
+      "value": "[\"Main Checking\",\"Everyday Visa\",\"Rewards Card\",\"Cash\",\"ICIC Bank\",\"Phone Pe\",\"GPay\",\"Paytm\"]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "goals": {
+      "value": "[{\"id\":\"dcb4e42d-6a1a-4838-b3ef-75e9da9718a1\",\"name\":\"Emergency Fund (6 Months)\",\"targetAmount\":25000,\"currentAmount\":18000,\"dueDate\":\"2026-12-31\",\"note\":\"High-Yield Savings Target\"},{\"id\":\"19bd727d-4b31-4a47-b131-da06f973360a\",\"name\":\"Japan Travel Fund\",\"targetAmount\":5000,\"currentAmount\":2850,\"dueDate\":\"2026-10-15\"}]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "budgets": {
+      "value": "[{\"id\":\"1140c1d2-b7b4-4eb4-b389-4e9ef16c1557\",\"category\":\"Groceries\",\"monthlyLimit\":600,\"active\":true},{\"id\":\"b7689fc6-7e89-473c-a1f8-22e6121c9af5\",\"category\":\"Dining\",\"monthlyLimit\":350,\"active\":true},{\"id\":\"8021340b-ee2c-431e-a309-37a71acdfd43\",\"category\":\"Entertainment\",\"monthlyLimit\":150,\"active\":true}]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "subscriptions": {
+      "value": "[{\"id\":\"b100dc86-e4c7-45b5-9f02-7994f87e077b\",\"service\":\"Netflix\",\"group\":\"Entertainment\",\"amount\":19.99,\"cadence\":\"monthly\",\"nextRenewalDate\":\"2026-09-03\",\"account\":\"Everyday Visa\",\"active\":true},{\"id\":\"a9d403dd-45c2-4c73-8cd0-bcdc19b38c9f\",\"service\":\"Spotify\",\"group\":\"Entertainment\",\"amount\":10.99,\"cadence\":\"monthly\",\"nextRenewalDate\":\"2026-09-05\",\"account\":\"Everyday Visa\",\"active\":true}]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "recurring": {
+      "value": "[{\"id\":\"e0349da4-7faf-4781-a595-632a40619d3e\",\"name\":\"Apartment Rent\",\"category\":\"Housing\",\"amount\":2400,\"cadence\":\"monthly\",\"nextDate\":\"2026-08-30\",\"account\":\"Main Checking\",\"active\":true}]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "dismissedPatterns": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "assetsTotal": {
+      "value": "48500",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "liabilitiesTotal": {
+      "value": "12200",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "netWorthConfigured": {
+      "value": "true",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "selectedPeriod": {
+      "value": "\"all-time\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveProvider": {
+      "value": "\"google-drive\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveFolderName": {
+      "value": "\"Google Drive Financial Inbox\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveFolderId": {
+      "value": "\"1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveFolderUrl": {
+      "value": "\"https://drive.google.com/drive/folders/1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveScheduleTime": {
+      "value": "\"08:00\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveScheduleTimezone": {
+      "value": "\"America/Los_Angeles\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveScheduleCadence": {
+      "value": "\"daily\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveLastSync": {
+      "value": "null",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveLastStatus": {
+      "value": "null",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveLastStats": {
+      "value": "null",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "processedFileIds": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "driveResetAt": {
+      "value": "\"2026-08-19T04:34:22.273Z\"",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    },
+    "freshStart": {
+      "value": "true",
+      "updatedAt": "2026-08-20T02:08:32.982Z"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "bindings": {
+    "d1": [
+      {
+        "binding": "DB",
+        "database_name": "ledgerly-db",
+        "database_id": "ledgerly-d1-primary"
+      }
+    ],
+    "r2": [
+      {
+        "binding": "BUCKET",
+        "bucket_name": "ledgerly-bucket"
+      }
+    ]
+  }
+}

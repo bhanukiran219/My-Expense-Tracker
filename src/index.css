@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Smooth button click animations */
+button, 
+[role="button"],
+.btn-animate {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, opacity 0.15s ease !important;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+.btn-animate:active:not(:disabled) {
+  transform: scale(0.95) !important;
+}
+
+button:disabled,
+[role="button"]:disabled {
+  transform: none !important;
+}

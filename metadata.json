@@ -1,0 +1,6 @@
+{
+  "name": "Bhanu Expence Tracker",
+  "description": "Private, mobile-friendly personal financial dashboard with cash flow analytics, recurring expense detection, budgets, goals, and fast CSV/document imports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
