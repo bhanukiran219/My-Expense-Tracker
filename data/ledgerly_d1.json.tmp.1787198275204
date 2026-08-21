@@ -1,0 +1,208 @@
+{
+  "transactions": [
+    {
+      "id": "5741a376-d8a2-464a-a42a-e853404d1d11",
+      "date": "2026-01-07",
+      "merchant": "Poojari Ganesh - Transfer",
+      "category": "Needs review",
+      "amount": 500,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-01-07|poojari ganesh - transfer|500.00|main checking",
+      "createdAt": "2026-08-20T03:57:51.731Z"
+    },
+    {
+      "id": "5b8c2ab5-ec5e-4589-9043-8a76e24e2b75",
+      "date": "2026-02-07",
+      "merchant": "Muthyal Re - Kalakand",
+      "category": "Dining",
+      "amount": 280,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|muthyal re - kalakand|280.00|main checking",
+      "createdAt": "2026-08-20T03:57:53.952Z"
+    },
+    {
+      "id": "6e253cce-5104-4d04-98b3-c96bcc205d49",
+      "date": "2026-02-07",
+      "merchant": "Muthyala P - Auto",
+      "category": "Transportation",
+      "amount": 50,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|muthyala p - auto|50.00|main checking",
+      "createdAt": "2026-08-20T03:57:54.102Z"
+    },
+    {
+      "id": "77aaaeb6-4220-44ad-b273-58adae2d076f",
+      "date": "2026-02-07",
+      "merchant": "CHEREDDY P - Rent  curr",
+      "category": "Housing",
+      "amount": 24895,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|chereddy p - rent  curr|24895.00|main checking",
+      "createdAt": "2026-08-20T03:57:54.184Z"
+    },
+    {
+      "id": "cda4323b-b4ea-436e-b563-537ee0080f10",
+      "date": "2026-02-07",
+      "merchant": "ATRIA CONV - UPIIntent",
+      "category": "Utilities",
+      "amount": 1060.82,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|atria conv - upiintent|1060.82|main checking",
+      "createdAt": "2026-08-20T03:57:54.432Z"
+    },
+    {
+      "id": "d2ceb116-df22-4f67-8cd4-13261f4f7870",
+      "date": "2026-02-07",
+      "merchant": "Netflix - MandateExe",
+      "category": "Entertainment",
+      "amount": 649,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|netflix - mandateexe|649.00|main checking",
+      "createdAt": "2026-08-20T03:57:54.710Z"
+    },
+    {
+      "id": "0142c933-7a11-473f-9513-9344f3c09e91",
+      "date": "2026-03-07",
+      "merchant": "A Anatha S - Payment fr",
+      "category": "Needs review",
+      "amount": 40,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-03-07|a anatha s - payment fr|40.00|main checking",
+      "createdAt": "2026-08-20T03:57:55.204Z"
+    }
+  ],
+  "tags": [
+    {
+      "name": "CSV Import",
+      "createdAt": "2026-08-20T03:49:56.068Z"
+    }
+  ],
+  "rules": [],
+  "documents": [],
+  "settings": {
+    "categories": {
+      "value": "[\"Housing\",\"Groceries\",\"Shopping\",\"Dining\",\"Transportation\",\"Utilities\",\"Subscriptions\",\"Insurance\",\"Health\",\"Entertainment\",\"Income\",\"Needs review\",\"Other\"]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "accounts": {
+      "value": "[\"Main Checking\",\"Everyday Visa\",\"Rewards Card\",\"Cash\"]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "goals": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "budgets": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "subscriptions": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "recurring": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "dismissedPatterns": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "assetsTotal": {
+      "value": "0",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "liabilitiesTotal": {
+      "value": "0",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "netWorthConfigured": {
+      "value": "false",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "selectedPeriod": {
+      "value": "\"all-time\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveProvider": {
+      "value": "\"google-drive\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveFolderName": {
+      "value": "\"Google Drive Financial Inbox\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveFolderId": {
+      "value": "\"1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveFolderUrl": {
+      "value": "\"https://drive.google.com/drive/folders/1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveScheduleTime": {
+      "value": "\"08:00\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveScheduleTimezone": {
+      "value": "\"America/Los_Angeles\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveScheduleCadence": {
+      "value": "\"daily\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveLastSync": {
+      "value": "null",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveLastStatus": {
+      "value": "null",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveLastStats": {
+      "value": "null",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "processedFileIds": {
+      "value": "[]",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "driveResetAt": {
+      "value": "\"2026-08-20T03:35:40.963Z\"",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    },
+    "freshStart": {
+      "value": "true",
+      "updatedAt": "2026-08-20T03:35:40.963Z"
+    }
+  }
+}

@@ -27,14 +27,14 @@ function formatTransaction(tx: any) {
 }
 
 // 1. GET /api/state
-router.get('/state', (req: Request, res: Response) => {
+router.get('/state', async (req: Request, res: Response) => {
   try {
-    const rawTxs = db.getTransactions(5000);
+    const rawTxs = await db.getTransactions(5000);
     const transactions = rawTxs.map(formatTransaction);
-    const tags = db.getTags();
-    const rules = db.getRules();
-    const settings = db.getSettings();
-    const documents = db.getDocuments(100);
+    const tags = await db.getTags();
+    const rules = await db.getRules();
+    const settings = await db.getSettings();
+    const documents = await db.getDocuments(100);
 
     res.json({
       success: true,
@@ -51,7 +51,7 @@ router.get('/state', (req: Request, res: Response) => {
 });
 
 // 2. POST /api/transactions
-router.post('/transactions', (req: Request, res: Response) => {
+router.post('/transactions', async (req: Request, res: Response) => {
   try {
     const body = req.body;
     const items = Array.isArray(body) ? body : Array.isArray(body.transactions) ? body.transactions : [body];
@@ -107,10 +107,10 @@ router.post('/transactions', (req: Request, res: Response) => {
 
       // Save global tags if new
       for (const t of tagsArr) {
-        db.insertTag(t);
+        await db.insertTag(t);
       }
 
-      const resInsert = db.insertTransaction({
+      const resInsert = await db.insertTransaction({
         date,
         merchant: String(raw.merchant),
         category,
@@ -147,14 +147,14 @@ router.post('/transactions', (req: Request, res: Response) => {
 });
 
 // 3. PATCH /api/transactions
-router.patch('/transactions', (req: Request, res: Response) => {
+router.patch('/transactions', async (req: Request, res: Response) => {
   try {
     const { id, date, merchant, category, amount, type, account, tags } = req.body;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Transaction ID is required' });
     }
 
-    const updated = db.updateTransaction(id, { date, merchant, category, amount, type, account, tags });
+    const updated = await db.updateTransaction(id, { date, merchant, category, amount, type, account, tags });
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Transaction not found' });
     }
@@ -170,14 +170,14 @@ router.patch('/transactions', (req: Request, res: Response) => {
 });
 
 // 4. DELETE /api/transactions/:id or query / body
-router.delete('/transactions/:id?', (req: Request, res: Response) => {
+router.delete('/transactions/:id?', async (req: Request, res: Response) => {
   try {
     const id = req.params.id || req.query.id || req.body.id;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Transaction ID is required' });
     }
 
-    const deleted = db.deleteTransaction(String(id));
+    const deleted = await db.deleteTransaction(String(id));
     res.json({
       success: deleted,
       message: deleted ? 'Transaction deleted' : 'Transaction not found',
@@ -189,15 +189,15 @@ router.delete('/transactions/:id?', (req: Request, res: Response) => {
 });
 
 // 5. PUT /api/preferences
-router.put('/preferences', (req: Request, res: Response) => {
+router.put('/preferences', async (req: Request, res: Response) => {
   try {
     const preferences = req.body;
     if (!preferences || typeof preferences !== 'object') {
       return res.status(400).json({ success: false, error: 'Invalid preferences payload' });
     }
 
-    db.updatePreferences(preferences);
-    const updatedSettings = db.getSettings();
+    await db.updatePreferences(preferences);
+    const updatedSettings = await db.getSettings();
 
     res.json({
       success: true,
@@ -210,7 +210,7 @@ router.put('/preferences', (req: Request, res: Response) => {
 });
 
 // 6. POST /api/documents (Multipart Upload)
-router.post('/documents', upload.array('files'), (req: Request, res: Response) => {
+router.post('/documents', upload.array('files'), async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
@@ -231,11 +231,11 @@ router.post('/documents', upload.array('files'), (req: Request, res: Response) =
       const safeName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
       const objectKey = `uploads/${crypto.randomUUID()}-${safeName}`;
 
-      // Store in R2 bucket
-      db.saveR2Object(objectKey, file.buffer);
+      // Store in Supabase Storage
+      await db.saveR2Object(objectKey, file.buffer);
 
-      // Insert metadata into D1
-      const doc = db.insertDocument({
+      // Insert metadata into Supabase DB
+      const doc = await db.insertDocument({
         filename: file.originalname,
         mimeType: file.mimetype || 'application/octet-stream',
         size: file.size,
@@ -244,14 +244,16 @@ router.post('/documents', upload.array('files'), (req: Request, res: Response) =
         source: 'upload',
       });
 
-      savedDocs.push(doc);
+      if (doc) {
+        savedDocs.push(doc);
+      }
 
       // If this file is an invoice or receipt image/PDF/text and user requested immediate extraction
       const isReceiptLike = file.mimetype.includes('image') || file.mimetype.includes('pdf') || file.originalname.toLowerCase().includes('receipt') || file.originalname.toLowerCase().includes('invoice');
       if (req.body.extractTransaction === 'true' && isReceiptLike) {
         // Grounded merchant estimation if provided in form
         if (req.body.merchant && req.body.amount) {
-          const resTx = db.insertTransaction({
+          const resTx = await db.insertTransaction({
             date: req.body.date || new Date().toISOString().split('T')[0],
             merchant: String(req.body.merchant),
             category: req.body.category || 'Needs review',
@@ -281,16 +283,16 @@ router.post('/documents', upload.array('files'), (req: Request, res: Response) =
 });
 
 // 7. GET /api/documents/:id/download
-router.get('/documents/:id/download', (req: Request, res: Response) => {
+router.get('/documents/:id/download', async (req: Request, res: Response) => {
   try {
-    const doc = db.getDocumentById(req.params.id);
+    const doc = await db.getDocumentById(req.params.id);
     if (!doc) {
       return res.status(404).json({ success: false, error: 'Document not found' });
     }
 
-    const { buffer, exists } = db.getR2Object(doc.objectKey);
+    const { buffer, exists } = await db.getR2Object(doc.objectKey);
     if (!exists) {
-      return res.status(404).json({ success: false, error: 'File object not found in R2 storage' });
+      return res.status(404).json({ success: false, error: 'File object not found in storage' });
     }
 
     res.setHeader('Content-Type', doc.mimeType);
@@ -303,9 +305,9 @@ router.get('/documents/:id/download', (req: Request, res: Response) => {
 });
 
 // 8. DELETE /api/documents/:id
-router.delete('/documents/:id', (req: Request, res: Response) => {
+router.delete('/documents/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = db.deleteDocument(req.params.id);
+    const deleted = await db.deleteDocument(req.params.id);
     res.json({
       success: deleted,
       message: deleted ? 'Document removed' : 'Document not found',
@@ -317,7 +319,7 @@ router.delete('/documents/:id', (req: Request, res: Response) => {
 });
 
 // 9. DELETE /api/state (Data Wipe)
-router.delete('/state', (req: Request, res: Response) => {
+router.delete('/state', async (req: Request, res: Response) => {
   try {
     const { confirmation } = req.body;
     if (confirmation !== 'DELETE ALL LEDGERLY DATA') {
@@ -327,7 +329,7 @@ router.delete('/state', (req: Request, res: Response) => {
       });
     }
 
-    db.wipeAllData();
+    await db.wipeAllData();
 
     res.json({
       success: true,
@@ -341,13 +343,13 @@ router.delete('/state', (req: Request, res: Response) => {
 });
 
 // 10. Rules Routes
-router.post('/rules', (req: Request, res: Response) => {
+router.post('/rules', async (req: Request, res: Response) => {
   try {
     const { whenText, thenText, enabled } = req.body;
     if (!whenText || !thenText) {
       return res.status(400).json({ success: false, error: 'whenText and thenText are required' });
     }
-    const rule = db.insertRule(whenText, thenText, enabled !== undefined ? enabled : 1);
+    const rule = await db.insertRule(whenText, thenText, enabled !== undefined ? enabled : 1);
     res.json({ success: true, rule });
   } catch (error: any) {
     console.error('Error inserting rule:', error);
@@ -355,11 +357,11 @@ router.post('/rules', (req: Request, res: Response) => {
   }
 });
 
-router.patch('/rules/:id', (req: Request, res: Response) => {
+router.patch('/rules/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { whenText, thenText, enabled } = req.body;
-    const rule = db.updateRule(id, { whenText, thenText, enabled });
+    const rule = await db.updateRule(id, { whenText, thenText, enabled });
     if (!rule) {
       return res.status(404).json({ success: false, error: 'Rule not found' });
     }
@@ -370,10 +372,10 @@ router.patch('/rules/:id', (req: Request, res: Response) => {
   }
 });
 
-router.delete('/rules/:id', (req: Request, res: Response) => {
+router.delete('/rules/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const deleted = db.deleteRule(id);
+    const deleted = await db.deleteRule(id);
     res.json({ success: deleted, message: deleted ? 'Rule deleted' : 'Rule not found' });
   } catch (error: any) {
     console.error('Error deleting rule:', error);
@@ -382,13 +384,13 @@ router.delete('/rules/:id', (req: Request, res: Response) => {
 });
 
 // 11. Tags Routes
-router.post('/tags', (req: Request, res: Response) => {
+router.post('/tags', async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: 'Tag name is required' });
     }
-    const created = db.insertTag(name);
+    const created = await db.insertTag(name);
     res.json({ success: true, tag: { name: name.trim(), createdAt: new Date().toISOString() } });
   } catch (error: any) {
     console.error('Error inserting tag:', error);
@@ -396,10 +398,10 @@ router.post('/tags', (req: Request, res: Response) => {
   }
 });
 
-router.delete('/tags/:name', (req: Request, res: Response) => {
+router.delete('/tags/:name', async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
-    const deleted = db.deleteTag(name);
+    const deleted = await db.deleteTag(name);
     res.json({ success: deleted, message: deleted ? 'Tag deleted' : 'Tag not found' });
   } catch (error: any) {
     console.error('Error deleting tag:', error);

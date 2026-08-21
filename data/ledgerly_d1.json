@@ -1,228 +1,586 @@
 {
   "transactions": [
     {
-      "id": "6e69e1f9-cb0e-4c7c-b1a2-37153b4f7b73",
-      "date": "2026-08-18",
-      "merchant": "Acme Property Management (Rent)",
-      "category": "Housing",
-      "amount": 2400,
+      "id": "a0845c8b-01ca-43a9-b511-c200ebb0562e",
+      "date": "2026-01-07",
+      "merchant": "Poojari Ganesh - Transfer",
+      "category": "Needs review",
+      "amount": 500,
       "type": "expense",
       "account": "Main Checking",
-      "tags": "[\"Fixed\"]",
+      "tags": "[\"CSV Import\"]",
       "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-18|acme property management (rent)|2400.00|main checking",
-      "createdAt": "2026-08-20T02:05:01.346Z"
+      "source": "csv",
+      "fingerprint": "2026-01-07|poojari ganesh - transfer|500.00|main checking",
+      "createdAt": "2026-08-20T04:04:16.929Z"
     },
     {
-      "id": "6e55f0a8-ca51-46cd-96f1-a1eafc7d4807",
-      "date": "2026-08-17",
-      "merchant": "TechCorp Bi-Weekly Payroll",
-      "category": "Income",
-      "amount": 4350,
-      "type": "income",
-      "account": "Main Checking",
-      "tags": "[\"Salary\"]",
-      "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-17|techcorp bi-weekly payroll|4350.00|main checking",
-      "createdAt": "2026-08-20T02:05:01.383Z"
-    },
-    {
-      "id": "f936f6b1-8bd6-491e-ba55-e532d3253ff3",
-      "date": "2026-08-16",
-      "merchant": "Whole Foods Market",
-      "category": "Groceries",
-      "amount": 142.35,
-      "type": "expense",
-      "account": "Everyday Visa",
-      "tags": "[\"Food\"]",
-      "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-16|whole foods market|142.35|everyday visa",
-      "createdAt": "2026-08-20T02:05:01.466Z"
-    },
-    {
-      "id": "b6dd2f01-c012-4d3f-8c94-83055d9456c7",
-      "date": "2026-08-10",
-      "merchant": "Netflix Subscription",
-      "category": "Entertainment",
-      "amount": 19.99,
-      "type": "expense",
-      "account": "Everyday Visa",
-      "tags": "[\"Streaming\"]",
-      "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-10|netflix subscription|19.99|everyday visa",
-      "createdAt": "2026-08-20T02:05:01.507Z"
-    },
-    {
-      "id": "ad6af339-ac52-4466-bc66-fc1b40b13869",
-      "date": "2026-08-06",
-      "merchant": "Spotify Premium",
-      "category": "Entertainment",
-      "amount": 10.99,
-      "type": "expense",
-      "account": "Everyday Visa",
-      "tags": "[\"Streaming\"]",
-      "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-06|spotify premium|10.99|everyday visa",
-      "createdAt": "2026-08-20T02:05:01.527Z"
-    },
-    {
-      "id": "d72bc013-16f7-45cb-bca4-be4aa7a8c86f",
-      "date": "2026-08-02",
-      "merchant": "Trader Joe’s",
-      "category": "Groceries",
-      "amount": 88.42,
-      "type": "expense",
-      "account": "Everyday Visa",
-      "tags": "[\"Food\"]",
-      "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-02|trader joe’s|88.42|everyday visa",
-      "createdAt": "2026-08-20T02:05:01.553Z"
-    },
-    {
-      "id": "c88ab260-138e-45c5-900b-ca1f87a6ae49",
-      "date": "2026-08-19",
-      "merchant": "Blue Bottle Coffee",
+      "id": "262cf419-626b-4429-b711-40ce053603b3",
+      "date": "2026-02-07",
+      "merchant": "Muthyal Re - Kalakand",
       "category": "Dining",
-      "amount": 7.25,
+      "amount": 280,
       "type": "expense",
-      "account": "Everyday Visa",
-      "tags": "[]",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
       "receipt": 0,
-      "source": "manual",
-      "fingerprint": "2026-08-19|blue bottle coffee|7.25|everyday visa",
-      "createdAt": "2026-08-20T02:05:01.577Z"
+      "source": "csv",
+      "fingerprint": "2026-02-07|muthyal re - kalakand|280.00|main checking",
+      "createdAt": "2026-08-20T04:04:16.995Z"
+    },
+    {
+      "id": "c77192b2-5857-4eb9-b7ca-a474ef789be8",
+      "date": "2026-02-07",
+      "merchant": "Muthyala P - Auto",
+      "category": "Transportation",
+      "amount": 50,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|muthyala p - auto|50.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.057Z"
+    },
+    {
+      "id": "ec3c2ca3-032e-4ed4-ab09-e59c1959fd75",
+      "date": "2026-02-07",
+      "merchant": "CHEREDDY P - Rent  curr",
+      "category": "Housing",
+      "amount": 24895,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|chereddy p - rent  curr|24895.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.115Z"
+    },
+    {
+      "id": "16e89347-f07f-4a39-91f8-35b58f1c7b36",
+      "date": "2026-02-07",
+      "merchant": "ATRIA CONV - UPIIntent",
+      "category": "Utilities",
+      "amount": 1060.82,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|atria conv - upiintent|1060.82|main checking",
+      "createdAt": "2026-08-20T04:04:17.183Z"
+    },
+    {
+      "id": "d3f24eff-bdc4-48c4-badc-fb61178f0986",
+      "date": "2026-02-07",
+      "merchant": "Netflix - MandateExe",
+      "category": "Entertainment",
+      "amount": 649,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-02-07|netflix - mandateexe|649.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.263Z"
+    },
+    {
+      "id": "8cb8f63a-7fec-4c1f-8357-7fc3f26db754",
+      "date": "2026-03-07",
+      "merchant": "A Anatha S - Payment fr",
+      "category": "Needs review",
+      "amount": 40,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-03-07|a anatha s - payment fr|40.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.331Z"
+    },
+    {
+      "id": "5c7baf27-dac3-4c8b-a542-730d70803423",
+      "date": "2026-03-07",
+      "merchant": "Tata AIG General Insurance - ₹1 Verification",
+      "category": "Income",
+      "amount": 1,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-03-07|tata aig general insurance - ₹1 verification|1.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.546Z"
+    },
+    {
+      "id": "d08b968d-5214-40cc-af2c-be4ba68482e5",
+      "date": "2026-03-07",
+      "merchant": "HASEENA TI - Chapathi",
+      "category": "Dining",
+      "amount": 55,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-03-07|haseena ti - chapathi|55.00|main checking",
+      "createdAt": "2026-08-20T04:04:17.805Z"
+    },
+    {
+      "id": "b22836b5-4784-4634-a014-285c9161274a",
+      "date": "2026-03-07",
+      "merchant": "Vidhi Ganesh - Transfer",
+      "category": "Needs review",
+      "amount": 40,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-03-07|vidhi ganesh - transfer|40.00|main checking",
+      "createdAt": "2026-08-20T04:04:18.008Z"
+    },
+    {
+      "id": "3944b67d-4876-4ddb-a8ce-1fa113083c28",
+      "date": "2026-04-07",
+      "merchant": "TIFFIN CEN - Tiffen",
+      "category": "Dining",
+      "amount": 90,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-04-07|tiffin cen - tiffen|90.00|main checking",
+      "createdAt": "2026-08-20T04:04:18.053Z"
+    },
+    {
+      "id": "e30aee08-a9c7-409d-80e0-7156157461f6",
+      "date": "2026-04-07",
+      "merchant": "SHAIK SAME - Rapido",
+      "category": "Transportation",
+      "amount": 66,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-04-07|shaik same - rapido|66.00|main checking",
+      "createdAt": "2026-08-20T04:04:18.560Z"
+    },
+    {
+      "id": "1f2fb128-dd1c-4dfe-91de-17e4fcd5c385",
+      "date": "2026-05-07",
+      "merchant": "SRI VENKAT - Pay to Mer",
+      "category": "Other",
+      "amount": 100,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-05-07|sri venkat - pay to mer|100.00|main checking",
+      "createdAt": "2026-08-20T04:04:18.599Z"
+    },
+    {
+      "id": "01eb0e02-d311-4eb8-8e29-c4369900a664",
+      "date": "2026-05-07",
+      "merchant": "Tata AIG General Insurance - Payment",
+      "category": "Income",
+      "amount": 39896,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-05-07|tata aig general insurance - payment|39896.00|main checking",
+      "createdAt": "2026-08-20T04:04:18.775Z"
+    },
+    {
+      "id": "7cb3e98a-1681-4338-8569-3a50e270e4c0",
+      "date": "2026-05-07",
+      "merchant": "Shirdi Sai - Sprite",
+      "category": "Dining",
+      "amount": 35,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-05-07|shirdi sai - sprite|35.00|main checking",
+      "createdAt": "2026-08-20T04:04:19.126Z"
+    },
+    {
+      "id": "20756d5e-936b-46f1-a036-b33787941b02",
+      "date": "2026-06-07",
+      "merchant": "Lavkush - Pay to Bha",
+      "category": "Other",
+      "amount": 20,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-06-07|lavkush - pay to bha|20.00|main checking",
+      "createdAt": "2026-08-20T04:04:19.831Z"
+    },
+    {
+      "id": "87f9250b-4389-4486-bdb7-f2cdf250f249",
+      "date": "2026-07-07",
+      "merchant": "Accenture Solutions Pvt Ltd - Salary/Reimbursement",
+      "category": "Income",
+      "amount": 1000,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-07-07|accenture solutions pvt ltd - salary/reimbursement|1000.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.109Z"
+    },
+    {
+      "id": "c945c1ec-ea07-476e-b3d1-3fefc01b223a",
+      "date": "2026-07-07",
+      "merchant": "Jio Rechar - Payment fr",
+      "category": "Utilities",
+      "amount": 3604,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-07-07|jio rechar - payment fr|3604.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.381Z"
+    },
+    {
+      "id": "f4dbd85f-05a1-45d0-9305-3a6e5364364b",
+      "date": "2026-07-07",
+      "merchant": "POLMADA VI - Amount set",
+      "category": "Needs review",
+      "amount": 7500,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-07-07|polmada vi - amount set|7500.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.505Z"
+    },
+    {
+      "id": "43c66c6e-bcd1-49c7-97ff-3f8708985e00",
+      "date": "2026-08-07",
+      "merchant": "R K DENTAL - Teeth scan",
+      "category": "Needs review",
+      "amount": 700,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-08-07|r k dental - teeth scan|700.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.681Z"
+    },
+    {
+      "id": "31a65129-889a-493a-bfaa-c1b94903cbb5",
+      "date": "2026-08-07",
+      "merchant": "Cash Deposit",
+      "category": "Needs review",
+      "amount": 40500,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-08-07|cash deposit|40500.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.868Z"
+    },
+    {
+      "id": "e250917a-e519-4b7a-be85-36fdd3bd2c07",
+      "date": "2026-08-07",
+      "merchant": "Rentala Ve / Chinna",
+      "category": "Housing",
+      "amount": 40500,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-08-07|rentala ve / chinna|40500.00|main checking",
+      "createdAt": "2026-08-20T04:04:20.974Z"
+    },
+    {
+      "id": "1b3c0cc9-bae8-45fa-aeec-6bc5a36d79e1",
+      "date": "2026-10-07",
+      "merchant": "PALLAANJIN - Auto",
+      "category": "Transportation",
+      "amount": 50,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-10-07|pallaanjin - auto|50.00|main checking",
+      "createdAt": "2026-08-20T04:04:21.328Z"
+    },
+    {
+      "id": "aaa8ac39-44be-4f14-bb6f-418b9668a0a2",
+      "date": "2026-10-07",
+      "merchant": "SHAIK GOUS - Auto",
+      "category": "Transportation",
+      "amount": 50,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-10-07|shaik gous - auto|50.00|main checking",
+      "createdAt": "2026-08-20T04:04:27.680Z"
+    },
+    {
+      "id": "bf7c87c2-31f4-466b-a264-9700e59d461d",
+      "date": "2026-10-07",
+      "merchant": "Tanguturi - Water",
+      "category": "Dining",
+      "amount": 15,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-10-07|tanguturi - water|15.00|main checking",
+      "createdAt": "2026-08-20T04:04:29.048Z"
+    },
+    {
+      "id": "634767b1-0f19-4f71-8e75-59bdb9964d2b",
+      "date": "2026-10-07",
+      "merchant": "Modiyam Kr - Dinner",
+      "category": "Dining",
+      "amount": 125,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-10-07|modiyam kr - dinner|125.00|main checking",
+      "createdAt": "2026-08-20T04:04:29.916Z"
+    },
+    {
+      "id": "2fc9c15b-8e43-4018-a260-136885922256",
+      "date": "2026-10-07",
+      "merchant": "IRCTC Tick - Paymentfor",
+      "category": "Transportation",
+      "amount": 1063.6,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-10-07|irctc tick - paymentfor|1063.60|main checking",
+      "createdAt": "2026-08-20T04:04:43.288Z"
+    },
+    {
+      "id": "7f33ec49-74a0-4a98-895c-d140da21496f",
+      "date": "2026-11-07",
+      "merchant": "Patan Shab - 2 kg tamat",
+      "category": "Other",
+      "amount": 20,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-11-07|patan shab - 2 kg tamat|20.00|main checking",
+      "createdAt": "2026-08-20T04:04:46.679Z"
+    },
+    {
+      "id": "662ba58a-6fda-47d0-9890-9265d6875ce4",
+      "date": "2026-11-07",
+      "merchant": "APPLE MEDI - Execution",
+      "category": "Subscriptions",
+      "amount": 179,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-11-07|apple medi - execution|179.00|main checking",
+      "createdAt": "2026-08-20T04:04:51.482Z"
+    },
+    {
+      "id": "bb0b6d01-8901-4e58-b0e2-cdd5dde473f5",
+      "date": "2026-12-07",
+      "merchant": "Ms  Peddakotla  Geetha",
+      "category": "Amount Transfer",
+      "amount": 50000,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-12-07|ms  peddakotla  geetha|50000.00|main checking",
+      "createdAt": "2026-08-20T04:04:54.569Z"
+    },
+    {
+      "id": "90c11f26-fd5f-4c56-a2e5-2d6926f24692",
+      "date": "2026-12-07",
+      "merchant": "Modiyam Kr - Chapathi d",
+      "category": "Dining",
+      "amount": 120,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-12-07|modiyam kr - chapathi d|120.00|main checking",
+      "createdAt": "2026-08-20T04:04:58.244Z"
+    },
+    {
+      "id": "a4687414-7329-443f-a7d2-520b5d5f04f7",
+      "date": "2026-12-07",
+      "merchant": "SAFA BOOK - Cone icrea",
+      "category": "Other",
+      "amount": 140,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-12-07|safa book - cone icrea|140.00|main checking",
+      "createdAt": "2026-08-20T04:05:00.145Z"
+    },
+    {
+      "id": "9f3b4bc6-46b9-46b7-a432-2f52a7f2a822",
+      "date": "2026-12-07",
+      "merchant": "Akhila - Transfer",
+      "category": "Income",
+      "amount": 1,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-12-07|akhila - transfer|1.00|main checking",
+      "createdAt": "2026-08-20T04:05:02.788Z"
+    },
+    {
+      "id": "ad4220f1-9e06-4368-85e2-304da4ea082e",
+      "date": "2026-12-07",
+      "merchant": "Ms  Peddakotla  Geetha",
+      "category": "Amount Transfer",
+      "amount": 150000,
+      "type": "expense",
+      "account": "Main Checking",
+      "tags": "[\"CSV Import\"]",
+      "receipt": 0,
+      "source": "csv",
+      "fingerprint": "2026-12-07|ms  peddakotla  geetha|150000.00|main checking",
+      "createdAt": "2026-08-20T04:05:04.788Z"
     }
   ],
   "tags": [
     {
-      "name": "Salary",
-      "createdAt": "2026-08-19T04:34:41.276Z"
-    },
-    {
-      "name": "Income",
-      "createdAt": "2026-08-19T04:35:15.537Z"
-    },
-    {
       "name": "CSV Import",
-      "createdAt": "2026-08-19T04:41:06.845Z"
-    },
-    {
-      "name": "Fixed",
-      "createdAt": "2026-08-20T02:05:01.032Z"
-    },
-    {
-      "name": "Food",
-      "createdAt": "2026-08-20T02:05:01.428Z"
-    },
-    {
-      "name": "Streaming",
-      "createdAt": "2026-08-20T02:05:01.490Z"
+      "createdAt": "2026-08-20T03:49:56.068Z"
     }
   ],
   "rules": [],
   "documents": [],
   "settings": {
     "categories": {
-      "value": "[\"Housing\",\"Groceries\",\"Shopping\",\"Dining\",\"Transportation\",\"Utilities\",\"Subscriptions\",\"Insurance\",\"Health\",\"Entertainment\",\"Income\",\"Needs review\",\"Other\",\"Movies\"]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[\"Housing\",\"Groceries\",\"Shopping\",\"Dining\",\"Transportation\",\"Utilities\",\"Subscriptions\",\"Insurance\",\"Health\",\"Entertainment\",\"Income\",\"Needs review\",\"Other\",\"Amount Transfer\"]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "accounts": {
-      "value": "[\"Main Checking\",\"Everyday Visa\",\"Rewards Card\",\"Cash\",\"ICIC Bank\",\"Phone Pe\",\"GPay\",\"Paytm\"]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[\"Main Checking\",\"Everyday Visa\",\"Rewards Card\",\"Cash\"]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "goals": {
-      "value": "[{\"id\":\"dcb4e42d-6a1a-4838-b3ef-75e9da9718a1\",\"name\":\"Emergency Fund (6 Months)\",\"targetAmount\":25000,\"currentAmount\":18000,\"dueDate\":\"2026-12-31\",\"note\":\"High-Yield Savings Target\"},{\"id\":\"19bd727d-4b31-4a47-b131-da06f973360a\",\"name\":\"Japan Travel Fund\",\"targetAmount\":5000,\"currentAmount\":2850,\"dueDate\":\"2026-10-15\"}]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "budgets": {
-      "value": "[{\"id\":\"1140c1d2-b7b4-4eb4-b389-4e9ef16c1557\",\"category\":\"Groceries\",\"monthlyLimit\":600,\"active\":true},{\"id\":\"b7689fc6-7e89-473c-a1f8-22e6121c9af5\",\"category\":\"Dining\",\"monthlyLimit\":350,\"active\":true},{\"id\":\"8021340b-ee2c-431e-a309-37a71acdfd43\",\"category\":\"Entertainment\",\"monthlyLimit\":150,\"active\":true}]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "subscriptions": {
-      "value": "[{\"id\":\"b100dc86-e4c7-45b5-9f02-7994f87e077b\",\"service\":\"Netflix\",\"group\":\"Entertainment\",\"amount\":19.99,\"cadence\":\"monthly\",\"nextRenewalDate\":\"2026-09-03\",\"account\":\"Everyday Visa\",\"active\":true},{\"id\":\"a9d403dd-45c2-4c73-8cd0-bcdc19b38c9f\",\"service\":\"Spotify\",\"group\":\"Entertainment\",\"amount\":10.99,\"cadence\":\"monthly\",\"nextRenewalDate\":\"2026-09-05\",\"account\":\"Everyday Visa\",\"active\":true}]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "recurring": {
-      "value": "[{\"id\":\"e0349da4-7faf-4781-a595-632a40619d3e\",\"name\":\"Apartment Rent\",\"category\":\"Housing\",\"amount\":2400,\"cadence\":\"monthly\",\"nextDate\":\"2026-08-30\",\"account\":\"Main Checking\",\"active\":true}]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "[]",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "dismissedPatterns": {
       "value": "[]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "assetsTotal": {
-      "value": "48500",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "0",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "liabilitiesTotal": {
-      "value": "12200",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "0",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "netWorthConfigured": {
-      "value": "true",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "false",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "selectedPeriod": {
       "value": "\"all-time\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveProvider": {
       "value": "\"google-drive\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveFolderName": {
       "value": "\"Google Drive Financial Inbox\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveFolderId": {
       "value": "\"1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveFolderUrl": {
       "value": "\"https://drive.google.com/drive/folders/1tdh8R2wIgyZayESKTiKrnvoLHTvg40mL\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveScheduleTime": {
       "value": "\"08:00\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveScheduleTimezone": {
       "value": "\"America/Los_Angeles\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveScheduleCadence": {
       "value": "\"daily\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveLastSync": {
       "value": "null",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveLastStatus": {
       "value": "null",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveLastStats": {
       "value": "null",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "processedFileIds": {
       "value": "[]",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "driveResetAt": {
-      "value": "\"2026-08-19T04:34:22.273Z\"",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "value": "\"2026-08-20T03:35:40.963Z\"",
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     },
     "freshStart": {
       "value": "true",
-      "updatedAt": "2026-08-20T02:08:32.982Z"
+      "updatedAt": "2026-08-21T05:57:35.652Z"
     }
   }
 }
