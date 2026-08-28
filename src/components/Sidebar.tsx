@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon,
   ShieldCheck,
   Upload,
+  HandCoins,
 } from 'lucide-react';
 import { ActiveTab } from '../types';
 
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'subscriptions', label: 'Subscriptions', icon: Sparkles },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
     { id: 'goals', label: 'Goals', icon: Target },
+    { id: 'loans', label: 'Loans & Debts', icon: HandCoins },
     { id: 'documents', label: 'Documents', icon: FileText, badge: documentCount > 0 ? documentCount : undefined },
     { id: 'rules-tags', label: 'Rules & Tags', icon: SlidersHorizontal },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },

@@ -1,21 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import crypto from 'crypto';
 
-dotenv.config();
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DB_FILE = path.join(DATA_DIR, 'db.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_KEY || '';
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ SUPABASE_URL and SUPABASE_KEY are not set. The database will not work properly until you set them.');
-}
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
+// Ensure directories exist
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 export interface DBTransaction {
   id: string;
+  user_id: string;
   date: string;
   merchant: string;
   category: string;
@@ -31,11 +28,13 @@ export interface DBTransaction {
 
 export interface DBTag {
   name: string;
+  user_id: string;
   created_at: string;
 }
 
 export interface DBRule {
   id: string;
+  user_id: string;
   when_text: string;
   then_text: string;
   enabled: number;
@@ -44,6 +43,7 @@ export interface DBRule {
 
 export interface DBDocument {
   id: string;
+  user_id: string;
   filename: string;
   mime_type: string;
   size: number;
@@ -55,11 +55,53 @@ export interface DBDocument {
 
 export interface DBSetting {
   key: string;
+  user_id: string;
   value: string;
   updated_at: string;
 }
 
-export class SupabaseDatabase {
+interface LocalDBState {
+  transactions: DBTransaction[];
+  tags: DBTag[];
+  rules: DBRule[];
+  documents: DBDocument[];
+  settings: Record<string, Record<string, any>>; // userId -> settings object
+}
+
+export class LocalDatabase {
+  private state: LocalDBState = {
+    transactions: [],
+    tags: [],
+    rules: [],
+    documents: [],
+    settings: {}
+  };
+
+  constructor() {
+    this.loadState();
+  }
+
+  private loadState() {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const data = fs.readFileSync(DB_FILE, 'utf-8');
+        this.state = JSON.parse(data);
+      } else {
+        this.saveState();
+      }
+    } catch (err) {
+      console.error('Error loading local DB state:', err);
+    }
+  }
+
+  private saveState() {
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(this.state, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Error saving local DB state:', err);
+    }
+  }
+
   // --- Transactions ---
   public buildFingerprint(date: string, merchant: string, amount: number, account: string): string {
     const d = (date || '').trim();
@@ -69,42 +111,32 @@ export class SupabaseDatabase {
     return `${d}|${m}|${a}|${acc}`;
   }
 
-  public async getTransactions(limit = 5000): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error fetching transactions:', error);
-      return [];
-    }
-    // Convert snake_case back to camelCase for the frontend if needed, but we'll map createdAt
-    return (data || []).map(row => ({
+  public async getTransactions(userId: string, limit = 5000): Promise<any[]> {
+    const userTxs = this.state.transactions.filter(t => t.user_id === userId);
+    const sorted = [...userTxs].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA === dateB) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      return dateB - dateA;
+    });
+    
+    return sorted.slice(0, limit).map(row => ({
       ...row,
       createdAt: row.created_at
     }));
   }
 
-  public async insertTransaction(tx: any): Promise<{ success: boolean; transaction?: any; isDuplicate?: boolean }> {
+  public async insertTransaction(userId: string, tx: any): Promise<{ success: boolean; transaction?: any; isDuplicate?: boolean }> {
     const fingerprint = this.buildFingerprint(tx.date, tx.merchant, tx.amount, tx.account);
     
-    // Check for duplicates
-    const { data: existing } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('fingerprint', fingerprint)
-      .single();
-
+    const existing = this.state.transactions.find(t => t.user_id === userId && t.fingerprint === fingerprint);
     if (existing) {
       return { success: false, isDuplicate: true, transaction: { ...existing, createdAt: existing.created_at } };
     }
 
     const id = tx.id || crypto.randomUUID();
-
-    // Apply rules
     let category = tx.category || 'Needs review';
     let tagsList: string[] = [];
     try {
@@ -113,18 +145,18 @@ export class SupabaseDatabase {
       tagsList = [];
     }
 
-    const rules = await this.getRules();
-    const activeRules = rules.filter((r: any) => r.enabled === 1);
+    const activeRules = this.state.rules.filter(r => r.user_id === userId && r.enabled === 1);
     for (const rule of activeRules) {
-      if (rule.whenText && tx.merchant.toLowerCase().includes(rule.whenText.toLowerCase())) {
-        if (rule.thenText) {
-          category = rule.thenText;
+      if (rule.when_text && tx.merchant.toLowerCase().includes(rule.when_text.toLowerCase())) {
+        if (rule.then_text) {
+          category = rule.then_text;
         }
       }
     }
 
-    const newTx = {
+    const newTx: DBTransaction = {
       id,
+      user_id: userId,
       date: tx.date,
       merchant: tx.merchant.trim(),
       category: category.trim(),
@@ -135,28 +167,21 @@ export class SupabaseDatabase {
       receipt: tx.receipt ? 1 : 0,
       source: tx.source || 'manual',
       fingerprint,
+      created_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .insert([newTx])
-      .select()
-      .single();
+    this.state.transactions.push(newTx);
+    this.saveState();
 
-    if (error) {
-      console.error('Error inserting transaction:', error);
-      return { success: false };
-    }
-
-    return { success: true, transaction: { ...data, createdAt: data.created_at } };
+    return { success: true, transaction: { ...newTx, createdAt: newTx.created_at } };
   }
 
-  public async updateTransaction(id: string, updates: any): Promise<any | null> {
-    // First get existing transaction to calculate new fingerprint if needed
-    const { data: existing } = await supabase.from('transactions').select('*').eq('id', id).single();
-    if (!existing) return null;
+  public async updateTransaction(userId: string, id: string, updates: any): Promise<any | null> {
+    const index = this.state.transactions.findIndex(t => t.id === id && t.user_id === userId);
+    if (index === -1) return null;
 
-    const payload: any = {};
+    const existing = this.state.transactions[index];
+    const payload = { ...existing };
     let fingerprintChanged = false;
 
     if (updates.date !== undefined) {
@@ -185,64 +210,59 @@ export class SupabaseDatabase {
       const normalized = Array.from(new Set(updates.tags.map((t: string) => t.trim()).filter(Boolean)));
       payload.tags = JSON.stringify(normalized);
       for (const tagName of normalized) {
-        await this.insertTag(tagName as string);
+        await this.insertTag(userId, tagName as string);
       }
     }
 
     if (fingerprintChanged) {
-      const tx = { ...existing, ...payload };
-      payload.fingerprint = this.buildFingerprint(tx.date, tx.merchant, tx.amount, tx.account);
+      payload.fingerprint = this.buildFingerprint(payload.date, payload.merchant, payload.amount, payload.account);
     }
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
+    this.state.transactions[index] = payload;
+    this.saveState();
 
-    if (error) {
-      console.error('Error updating transaction:', error);
-      return null;
-    }
-
-    return { ...data, createdAt: data.created_at };
+    return { ...payload, createdAt: payload.created_at };
   }
 
-  public async deleteTransaction(id: string): Promise<boolean> {
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting transaction:', error);
-      return false;
+  public async deleteTransaction(userId: string, id: string): Promise<boolean> {
+    const initialLen = this.state.transactions.length;
+    this.state.transactions = this.state.transactions.filter(t => !(t.id === id && t.user_id === userId));
+    if (this.state.transactions.length !== initialLen) {
+      this.saveState();
+      return true;
+    }
+    return false;
+  }
+
+  // --- Tags ---
+  public async getTags(userId: string): Promise<any[]> {
+    return this.state.tags.filter(t => t.user_id === userId).map(row => ({ ...row, createdAt: row.created_at }));
+  }
+
+  public async insertTag(userId: string, name: string): Promise<boolean> {
+    const trimmed = name.trim();
+    if (!trimmed) return false;
+    if (!this.state.tags.some(t => t.name.toLowerCase() === trimmed.toLowerCase() && t.user_id === userId)) {
+      this.state.tags.push({ name: trimmed, user_id: userId, created_at: new Date().toISOString() });
+      this.saveState();
     }
     return true;
   }
 
-  // --- Tags ---
-  public async getTags(): Promise<any[]> {
-    const { data, error } = await supabase.from('tags').select('*');
-    if (error) return [];
-    return data.map(row => ({ ...row, createdAt: row.created_at }));
-  }
-
-  public async insertTag(name: string): Promise<boolean> {
-    const trimmed = name.trim();
-    if (!trimmed) return false;
-    const { error } = await supabase.from('tags').insert([{ name: trimmed }]).select();
-    return !error;
-  }
-
-  public async deleteTag(name: string): Promise<boolean> {
-    const trimmed = name.trim();
-    const { error } = await supabase.from('tags').delete().ilike('name', trimmed);
-    return !error;
+  public async deleteTag(userId: string, name: string): Promise<boolean> {
+    const trimmed = name.trim().toLowerCase();
+    const initialLen = this.state.tags.length;
+    this.state.tags = this.state.tags.filter(t => !(t.name.toLowerCase() === trimmed && t.user_id === userId));
+    if (this.state.tags.length !== initialLen) {
+      this.saveState();
+      return true;
+    }
+    return false;
   }
 
   // --- Rules ---
-  public async getRules(): Promise<any[]> {
-    const { data, error } = await supabase.from('rules').select('*');
-    if (error) return [];
-    return data.map(row => ({
+  public async getRules(userId: string): Promise<any[]> {
+    return this.state.rules.filter(r => r.user_id === userId).map(row => ({
       id: row.id,
       whenText: row.when_text,
       thenText: row.then_text,
@@ -251,14 +271,36 @@ export class SupabaseDatabase {
     }));
   }
 
-  public async insertRule(whenText: string, thenText: string, enabled = 1): Promise<any> {
-    const { data, error } = await supabase
-      .from('rules')
-      .insert([{ when_text: whenText.trim(), then_text: thenText.trim(), enabled: enabled ? 1 : 0 }])
-      .select()
-      .single();
+  public async insertRule(userId: string, whenText: string, thenText: string, enabled = 1): Promise<any> {
+    const newRule: DBRule = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      when_text: whenText.trim(),
+      then_text: thenText.trim(),
+      enabled: enabled ? 1 : 0,
+      created_at: new Date().toISOString()
+    };
+    this.state.rules.push(newRule);
+    this.saveState();
+    return {
+      id: newRule.id,
+      whenText: newRule.when_text,
+      thenText: newRule.then_text,
+      enabled: newRule.enabled,
+      createdAt: newRule.created_at
+    };
+  }
 
-    if (error) return null;
+  public async updateRule(userId: string, id: string, updates: any): Promise<any> {
+    const index = this.state.rules.findIndex(r => r.id === id && r.user_id === userId);
+    if (index === -1) return null;
+
+    if (updates.whenText !== undefined) this.state.rules[index].when_text = updates.whenText.trim();
+    if (updates.thenText !== undefined) this.state.rules[index].then_text = updates.thenText.trim();
+    if (updates.enabled !== undefined) this.state.rules[index].enabled = updates.enabled ? 1 : 0;
+
+    this.saveState();
+    const data = this.state.rules[index];
     return {
       id: data.id,
       whenText: data.when_text,
@@ -268,44 +310,24 @@ export class SupabaseDatabase {
     };
   }
 
-  public async updateRule(id: string, updates: any): Promise<any> {
-    const payload: any = {};
-    if (updates.whenText !== undefined) payload.when_text = updates.whenText.trim();
-    if (updates.thenText !== undefined) payload.then_text = updates.thenText.trim();
-    if (updates.enabled !== undefined) payload.enabled = updates.enabled ? 1 : 0;
-
-    const { data, error } = await supabase
-      .from('rules')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      whenText: data.when_text,
-      thenText: data.then_text,
-      enabled: data.enabled,
-      createdAt: data.created_at
-    };
+  public async deleteRule(userId: string, id: string): Promise<boolean> {
+    const initialLen = this.state.rules.length;
+    this.state.rules = this.state.rules.filter(r => !(r.id === id && r.user_id === userId));
+    if (this.state.rules.length !== initialLen) {
+      this.saveState();
+      return true;
+    }
+    return false;
   }
 
-  public async deleteRule(id: string): Promise<boolean> {
-    const { error } = await supabase.from('rules').delete().eq('id', id);
-    return !error;
-  }
-
-  // --- Documents (Supabase Storage) ---
-  public async getDocuments(limit = 100): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) return [];
-    return data.map(row => ({
+  // --- Documents (Local Storage) ---
+  public async getDocuments(userId: string, limit = 100): Promise<any[]> {
+    const userDocs = this.state.documents.filter(d => d.user_id === userId);
+    const sorted = [...userDocs].sort((a, b) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    
+    return sorted.slice(0, limit).map(row => ({
       id: row.id,
       filename: row.filename,
       mimeType: row.mime_type,
@@ -317,156 +339,168 @@ export class SupabaseDatabase {
     }));
   }
 
-  public async insertDocument(doc: any): Promise<any> {
-    const { data, error } = await supabase
-      .from('documents')
-      .insert([{
-        filename: doc.filename,
-        mime_type: doc.mimeType,
-        size: doc.size,
-        object_key: doc.objectKey,
-        status: doc.status,
-        source: doc.source
-      }])
-      .select()
-      .single();
-
-    if (error) return null;
+  public async insertDocument(userId: string, doc: any): Promise<any> {
+    const newDoc: DBDocument = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      filename: doc.filename,
+      mime_type: doc.mimeType,
+      size: doc.size,
+      object_key: doc.objectKey,
+      status: doc.status,
+      source: doc.source,
+      created_at: new Date().toISOString()
+    };
+    this.state.documents.push(newDoc);
+    this.saveState();
     return {
-      id: data.id,
-      filename: data.filename,
-      mimeType: data.mime_type,
-      size: data.size,
-      objectKey: data.object_key,
-      status: data.status,
-      source: data.source,
-      createdAt: data.created_at
+      id: newDoc.id,
+      filename: newDoc.filename,
+      mimeType: newDoc.mime_type,
+      size: newDoc.size,
+      objectKey: newDoc.object_key,
+      status: newDoc.status,
+      source: newDoc.source,
+      createdAt: newDoc.created_at
     };
   }
 
-  public async getDocumentById(id: string): Promise<any> {
-    const { data, error } = await supabase.from('documents').select('*').eq('id', id).single();
-    if (error || !data) return null;
+  public async getDocumentById(userId: string, id: string): Promise<any> {
+    const doc = this.state.documents.find(d => d.id === id && d.user_id === userId);
+    if (!doc) return null;
     return {
-      id: data.id,
-      filename: data.filename,
-      mimeType: data.mime_type,
-      size: data.size,
-      objectKey: data.object_key,
-      status: data.status,
-      source: data.source,
-      createdAt: data.created_at
+      id: doc.id,
+      filename: doc.filename,
+      mimeType: doc.mime_type,
+      size: doc.size,
+      objectKey: doc.object_key,
+      status: doc.status,
+      source: doc.source,
+      createdAt: doc.created_at
     };
   }
 
-  public async deleteDocument(id: string): Promise<boolean> {
-    const doc = await this.getDocumentById(id);
+  public async deleteDocument(userId: string, id: string): Promise<boolean> {
+    const doc = await this.getDocumentById(userId, id);
     if (!doc) return false;
     
-    // Delete from Supabase Storage
-    await this.deleteR2Object(doc.objectKey);
+    // Delete from Local Storage
+    await this.deleteR2Object(userId, doc.objectKey);
     
-    const { error } = await supabase.from('documents').delete().eq('id', id);
-    return !error;
+    this.state.documents = this.state.documents.filter(d => !(d.id === id && d.user_id === userId));
+    this.saveState();
+    return true;
   }
 
-  // --- Supabase Storage operations ---
-  public async saveR2Object(objectKey: string, buffer: Buffer): Promise<string> {
-    const { error } = await supabase.storage.from('ledgerly-storage').upload(objectKey, buffer, {
-      upsert: true
-    });
-    if (error) {
-      console.error('Error uploading file to Supabase Storage:', error);
-    }
+  // --- Local Storage operations ---
+  public async saveR2Object(userId: string, objectKey: string, buffer: Buffer): Promise<string> {
+    // objectKey here includes "uploads/" which we can remove or use as subpath
+    const basename = path.basename(objectKey);
+    const dest = path.join(UPLOADS_DIR, `${userId}_${basename}`);
+    fs.writeFileSync(dest, buffer);
     return objectKey;
   }
 
-  public async getR2Object(objectKey: string): Promise<{ buffer: Buffer; exists: boolean }> {
-    const { data, error } = await supabase.storage.from('ledgerly-storage').download(objectKey);
-    if (error || !data) {
-      return { buffer: Buffer.from([]), exists: false };
+  public async getR2Object(userId: string, objectKey: string): Promise<{ buffer: Buffer; exists: boolean }> {
+    const basename = path.basename(objectKey);
+    const dest = path.join(UPLOADS_DIR, `${userId}_${basename}`);
+    if (fs.existsSync(dest)) {
+      return { buffer: fs.readFileSync(dest), exists: true };
     }
-    const arrayBuffer = await data.arrayBuffer();
-    return { buffer: Buffer.from(arrayBuffer), exists: true };
+    return { buffer: Buffer.from([]), exists: false };
   }
 
-  public async deleteR2Object(objectKey: string): Promise<boolean> {
-    const { error } = await supabase.storage.from('ledgerly-storage').remove([objectKey]);
-    return !error;
+  public async deleteR2Object(userId: string, objectKey: string): Promise<boolean> {
+    const basename = path.basename(objectKey);
+    const dest = path.join(UPLOADS_DIR, `${userId}_${basename}`);
+    if (fs.existsSync(dest)) {
+      fs.unlinkSync(dest);
+      return true;
+    }
+    return false;
   }
 
-  public async clearR2Storage(): Promise<void> {
-    // Note: Emptying a bucket via API requires listing all files and deleting them.
-    // For safety, this function will simply skip in this basic setup.
-    console.log('Skipping bucket wipe for safety on Supabase');
+  public async clearR2Storage(userId: string): Promise<void> {
+    try {
+      const files = fs.readdirSync(UPLOADS_DIR);
+      for (const file of files) {
+        if (file.startsWith(`${userId}_`)) {
+          fs.unlinkSync(path.join(UPLOADS_DIR, file));
+        }
+      }
+    } catch (e) {
+      console.error('Error clearing uploads:', e);
+    }
   }
 
   // --- Settings ---
-  public async getSettings(): Promise<Record<string, any>> {
-    const { data, error } = await supabase.from('settings').select('*');
-    const result: Record<string, any> = {};
-    if (!error && data) {
-      for (const row of data) {
-        try {
-          result[row.key] = JSON.parse(row.value);
-        } catch {
-          result[row.key] = row.value;
-        }
-      }
+  public async getSettings(userId: string): Promise<Record<string, any>> {
+    if (!this.state.settings[userId]) {
+      this.state.settings[userId] = {};
     }
-
+    const result = { ...this.state.settings[userId] };
     if (!result.driveProvider) result.driveProvider = 'onedrive';
-    if (!result.driveFolderUrl || result.driveFolderUrl.includes('ledgerly_inbox_folder')) {
-      result.driveFolderUrl = result.driveProvider === 'onedrive' 
+    
+    let urlStr = result.driveFolderUrl;
+    if (urlStr && typeof urlStr === 'object' && urlStr.value) {
+      urlStr = urlStr.value;
+    }
+    
+    if (!urlStr || (typeof urlStr === 'string' && urlStr.includes('ledgerly_inbox_folder'))) {
+      const defaultUrl = (result.driveProvider && result.driveProvider.value && result.driveProvider.value.includes('onedrive')) || result.driveProvider === 'onedrive'
         ? 'https://onedrive.live.com' 
         : 'https://drive.google.com';
+      if (typeof result.driveFolderUrl === 'object') {
+        result.driveFolderUrl.value = `"${defaultUrl}"`;
+      } else {
+        result.driveFolderUrl = defaultUrl;
+      }
     }
     return result;
   }
 
-  public async setSetting(key: string, value: any): Promise<void> {
-    await supabase.from('settings').upsert({
-      key,
-      value: JSON.stringify(value),
-      updated_at: new Date().toISOString()
-    });
+  public async setSetting(userId: string, key: string, value: any): Promise<void> {
+    if (!this.state.settings[userId]) {
+      this.state.settings[userId] = {};
+    }
+    this.state.settings[userId][key] = value;
+    this.saveState();
   }
 
-  public async updatePreferences(preferences: Record<string, any>): Promise<void> {
-    const upserts = [];
+  public async updatePreferences(userId: string, preferences: Record<string, any>): Promise<void> {
+    if (!this.state.settings[userId]) {
+      this.state.settings[userId] = {};
+    }
     for (const [k, v] of Object.entries(preferences)) {
       if (v !== undefined) {
-        upserts.push({ key: k, value: JSON.stringify(v), updated_at: new Date().toISOString() });
+        this.state.settings[userId][k] = v;
       }
     }
-    if (upserts.length > 0) {
-      await supabase.from('settings').upsert(upserts);
-    }
+    this.saveState();
   }
 
   // --- Complete State Wipe ---
-  public async wipeAllData(): Promise<boolean> {
-    await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('documents').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('rules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('tags').delete().neq('name', 'none');
+  public async wipeAllData(userId: string): Promise<boolean> {
+    this.state.transactions = this.state.transactions.filter(t => t.user_id !== userId);
+    this.state.documents = this.state.documents.filter(d => d.user_id !== userId);
+    this.state.tags = this.state.tags.filter(t => t.user_id !== userId);
+    this.state.rules = this.state.rules.filter(r => r.user_id !== userId);
     
-    // reset settings
+    // reset only document sync related settings
     const now = new Date().toISOString();
-    await this.updatePreferences({
-      assetsTotal: 0,
-      liabilitiesTotal: 0,
-      netWorthConfigured: false,
+    await this.updatePreferences(userId, {
       driveLastSync: null,
       driveLastStatus: null,
       driveLastStats: null,
       processedFileIds: [],
       driveResetAt: now,
-      freshStart: true,
     });
+    
+    await this.clearR2Storage(userId);
+    this.saveState();
     
     return true;
   }
 }
 
-export const db = new SupabaseDatabase();
+export const db = new LocalDatabase();

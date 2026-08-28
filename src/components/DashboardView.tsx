@@ -13,6 +13,14 @@ import {
   ReceiptText,
   Sparkles,
   ShieldAlert,
+  ShoppingCart,
+  Utensils,
+  Home,
+  Car,
+  HeartPulse,
+  GraduationCap,
+  Briefcase,
+  MoreHorizontal,
 } from 'lucide-react';
 import { AppState, DatePeriod, Transaction } from '../types';
 import { formatCurrency, formatPercent, formatDateDisplay } from '../utils/currency';
@@ -26,6 +34,18 @@ interface DashboardViewProps {
   onNavigateTab: (tab: any) => void;
   onOpenAddEntry: () => void;
 }
+
+const getCategoryIcon = (category: string) => {
+  const cat = category.toLowerCase();
+  if (cat.includes('grocer') || cat.includes('shop')) return <ShoppingCart className="w-4 h-4" />;
+  if (cat.includes('din') || cat.includes('food')) return <Utensils className="w-4 h-4" />;
+  if (cat.includes('hous') || cat.includes('rent') || cat.includes('util')) return <Home className="w-4 h-4" />;
+  if (cat.includes('trans') || cat.includes('car') || cat.includes('auto')) return <Car className="w-4 h-4" />;
+  if (cat.includes('health') || cat.includes('med')) return <HeartPulse className="w-4 h-4" />;
+  if (cat.includes('edu')) return <GraduationCap className="w-4 h-4" />;
+  if (cat.includes('work') || cat.includes('job') || cat.includes('income')) return <Briefcase className="w-4 h-4" />;
+  return <ReceiptText className="w-4 h-4" />;
+};
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   state,
@@ -64,19 +84,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const netWorth = state.settings.assetsTotal - state.settings.liabilitiesTotal;
   const isNetWorthSet = state.settings.netWorthConfigured;
 
-  // Category breakdown for donut/pie chart
+  // Category breakdown for list
   const categoryTotals: Record<string, number> = {};
-  const expenseTxs = periodTxs.filter((t) => t.type === 'expense');
-  for (const t of expenseTxs) {
+  for (const t of periodTxs) {
     const cat = t.category || 'Needs review';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
   }
+
+  const totalActivity = totalSpending + totalIncome;
 
   const sortedCategories = Object.entries(categoryTotals)
     .map(([name, amount]) => ({
       name,
       amount,
-      percentage: totalSpending > 0 ? (amount / totalSpending) * 100 : 0,
+      percentage: totalActivity > 0 ? (amount / totalActivity) * 100 : 0,
     }))
     .sort((a, b) => b.amount - a.amount);
 
@@ -138,7 +159,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const needsReviewCount = state.transactions.filter((t) => t.category === 'Needs review').length;
 
   // Upcoming recurring items
-  const upcomingItems = [...state.settings.recurring, ...state.settings.subscriptions]
+  const upcomingItems = [...(state.settings.recurring || []), ...(state.settings.subscriptions || [])]
     .filter((i) => i.active)
     .sort((a, b) => {
       const dateA = (a as any).nextDate || (a as any).nextRenewalDate || '';
@@ -177,7 +198,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="text-2xl sm:text-[26px] font-bold text-white tracking-tight leading-tight">
-              {isNetWorthSet ? formatCurrency(netWorth) : '$0.00'}
+              {isNetWorthSet ? formatCurrency(netWorth) : formatCurrency(0)}
             </div>
             <p className="text-xs text-slate-400 mt-1 font-normal">
               Assets minus liabilities
@@ -290,7 +311,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {highestSpendCat ? highestSpendCat.name : 'None'}
             </div>
             <p className="text-xs text-white/80 mt-1 font-normal truncate">
-              {highestSpendCat ? `${formatCurrency(highestSpendCat.amount)} in this period` : '$0.00 in this period'}
+              {highestSpendCat ? `${formatCurrency(highestSpendCat.amount)} in this period` : `${formatCurrency(0)} in this period`}
             </p>
           </div>
 
@@ -391,18 +412,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Spending by Category (1 col) */}
+        {/* Activity by Category (1 col) */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-900">Spending by Category</h3>
+              <h3 className="text-base font-bold text-slate-900">Activity by Category</h3>
               <span className="text-xs font-semibold text-slate-500">{getPeriodLabel(period)}</span>
             </div>
 
             {sortedCategories.length === 0 ? (
               <div className="h-56 flex flex-col items-center justify-center text-center p-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 <p className="text-xs font-semibold text-slate-500">
-                  No expense records in {getPeriodLabel(period).toLowerCase()}.
+                  No records in {getPeriodLabel(period).toLowerCase()}.
                 </p>
               </div>
             ) : (
@@ -422,7 +443,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 {/* Category List */}
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1 pt-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1 pt-2">
                   {sortedCategories.map((c, i) => (
                     <div key={c.name} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 truncate max-w-[140px]">
@@ -446,8 +467,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Total Outflow:</span>
-            <span className="font-bold text-slate-900">{formatCurrency(totalSpending)}</span>
+            <span>Total Volume:</span>
+            <span className="font-bold text-slate-900">{formatCurrency(totalActivity)}</span>
           </div>
         </div>
       </div>
@@ -477,13 +498,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div key={tx.id} className="py-3 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs ${
                         tx.type === 'income'
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-slate-100 text-slate-700'
                       }`}
                     >
-                      {tx.type === 'income' ? '+' : '-'}
+                      {tx.type === 'income' ? <TrendingUp className="w-4 h-4" /> : getCategoryIcon(tx.category)}
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-slate-900 leading-tight">

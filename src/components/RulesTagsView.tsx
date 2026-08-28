@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AppState, Rule, Tag } from '../types';
+import { getTagColorClass } from '../utils/tagColors';
 
 interface RulesTagsViewProps {
   state: AppState;
@@ -181,7 +182,7 @@ export const RulesTagsView: React.FC<RulesTagsViewProps> = ({
                 return (
                   <div
                     key={tag.name}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 hover:border-slate-300 transition"
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent text-xs font-medium transition ${getTagColorClass(tag.name)}`}
                   >
                     <span>{tag.name}</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-200/80 text-slate-600">

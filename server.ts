@@ -1,5 +1,7 @@
 import express from 'express';
 import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 import { createServer as createViteServer } from 'vite';
 import { router as apiRouter } from './server/routes.js';
 

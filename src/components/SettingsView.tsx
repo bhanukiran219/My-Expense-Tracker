@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
-import { AppState, Settings } from '../types';
+import { AppState, Settings, STARTER_CATEGORIES, STARTER_ACCOUNTS } from '../types';
 import { formatCurrency } from '../utils/currency';
 
 interface SettingsViewProps {
@@ -37,11 +37,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   // Accounts state
   const [newAccount, setNewAccount] = useState('');
-  const [accounts, setAccounts] = useState<string[]>(settings?.accounts || ['Main Checking', 'Savings']);
+  const [accounts, setAccounts] = useState<string[]>(settings?.accounts?.length ? settings.accounts : STARTER_ACCOUNTS);
 
   // Categories state
   const [newCategory, setNewCategory] = useState('');
-  const [categories, setCategories] = useState<string[]>(settings?.categories || ['Housing', 'Groceries', 'Utilities']);
+  const [categories, setCategories] = useState<string[]>(settings?.categories?.length ? settings.categories : STARTER_CATEGORIES);
 
   const parsedAssets = parseFloat(assets) || 0;
   const parsedLiabilities = parseFloat(liabilities) || 0;

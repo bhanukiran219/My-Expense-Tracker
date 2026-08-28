@@ -45,7 +45,7 @@ export const WipeDataModal: React.FC<WipeDataModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 bg-rose-50 border-b border-rose-100">
           <div className="flex items-center gap-2.5 text-rose-700 font-bold">
             <AlertTriangle className="w-5 h-5" />
-            <span>Erase All Ledgerly Data</span>
+            <span>Erase Transactions & Documents</span>
           </div>
           <button
             onClick={onClose}
@@ -63,7 +63,7 @@ export const WipeDataModal: React.FC<WipeDataModalProps> = ({
           )}
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            This action will permanently delete all <strong>transactions, documents, budgets, goals, recurring rules, and custom settings</strong> stored in your Cloudflare D1 database and R2 bucket.
+            This action will permanently delete all <strong>transactions and documents</strong>. Your budgets, goals, recurring rules, and custom settings will remain untouched.
           </p>
 
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import {
   X,
   Upload,
@@ -13,9 +14,12 @@ import {
   ArrowRight,
   RefreshCw,
   FileText,
+  ChevronRight,
+  Tags,
 } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
-import { saveTransactions, uploadDocuments } from '../../api';
+import { getTagColorClass } from '../../utils/tagColors';
+import { saveTransactions, uploadDocuments, parseExpenseWithAI } from '../../api';
 import { formatCurrency } from '../../utils/currency';
 import { CustomSelect } from '../CustomSelect';
 import { CustomDatePicker } from '../CustomDatePicker';
@@ -92,6 +96,9 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     skipped: number;
   } | null>(null);
 
+  const [aiText, setAiText] = useState<string>('');
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,6 +115,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     setNewTagInput('');
     setHasReceipt(false);
     setReceiptFile(null);
+    setAiText('');
   };
 
   const resetCsvState = () => {
@@ -146,59 +154,164 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     setNewTagInput('');
   };
 
-  // Process CSV file
+  // Process CSV/XLSX file
   const processCsvFile = (file: File) => {
     setCsvFile(file);
     setError(null);
     setMode('csv');
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      preview: 50,
-      complete: (results) => {
-        if (!results.meta.fields || results.meta.fields.length === 0) {
-          setError('Could not detect column headers in the CSV file.');
-          setCsvStep('upload');
-          return;
-        }
-
-        const fields = results.meta.fields;
-        setCsvHeaders(fields);
-        setCsvRows(results.data);
-
-        // Auto-detect mappings based on standard header names
-        const lower = fields.map((f) => f.toLowerCase());
-        const findField = (terms: string[]) => {
-          const idx = lower.findIndex((l) => terms.some((t) => l.includes(t)));
-          return idx !== -1 ? fields[idx] : '';
-        };
-
-        const detectedDate = findField(['date', 'posted', 'transaction date', 'time', 'txn date']);
-        const detectedMerchant = findField(['merchant', 'description', 'payee', 'name', 'details', 'memo', 'narration', 'particulars']);
-        const detectedAmount = findField(['amount', 'total', 'net', 'transaction amount']);
-        const detectedDebit = findField(['debit', 'withdrawal', 'charge', 'dr']);
-        const detectedCredit = findField(['credit', 'deposit', 'payment', 'cr']);
-        const detectedCategory = findField(['category', 'type', 'group']);
-        const detectedAccount = findField(['account', 'card', 'source']);
-
-        setCsvMapping({
-          date: detectedDate || fields[0] || '',
-          merchant: detectedMerchant || fields[1] || '',
-          amount: detectedAmount || (!detectedDebit && !detectedCredit ? fields[2] || '' : ''),
-          debit: detectedDebit,
-          credit: detectedCredit,
-          category: detectedCategory,
-          account: detectedAccount,
-        });
-
-        setCsvStep('preview');
-      },
-      error: (err) => {
-        setError(`Failed to parse CSV: ${err.message}`);
+    const handleData = (fields: string[], data: any[]) => {
+      if (!fields || fields.length === 0) {
+        setError('Could not detect column headers in the file.');
         setCsvStep('upload');
-      },
-    });
+        return;
+      }
+      setCsvHeaders(fields);
+      setCsvRows(data);
+
+      const lower = fields.map((f) => f.toLowerCase());
+      const findField = (terms: string[]) => {
+        const idx = lower.findIndex((l) => terms.some((t) => l.includes(t)));
+        return idx !== -1 ? fields[idx] : '';
+      };
+
+      const detectedDate = findField(['date', 'posted', 'transaction date', 'time', 'txn date']);
+      const detectedMerchant = findField(['merchant', 'description', 'payee', 'name', 'details', 'memo', 'narration', 'particulars']);
+      const detectedAmount = findField(['amount', 'total', 'net', 'transaction amount']);
+      const detectedDebit = findField(['debit', 'withdrawal', 'charge', 'dr']);
+      const detectedCredit = findField(['credit', 'deposit', 'payment', 'cr']);
+      const detectedCategory = findField(['category', 'type', 'group']);
+      const detectedAccount = findField(['account', 'card', 'source']);
+
+      setCsvMapping({
+        date: detectedDate || fields[0] || '',
+        merchant: detectedMerchant || fields[1] || '',
+        amount: detectedAmount || (!detectedDebit && !detectedCredit ? fields[2] || '' : ''),
+        debit: detectedDebit,
+        credit: detectedCredit,
+        category: detectedCategory,
+        account: detectedAccount,
+      });
+
+      setCsvStep('preview');
+    };
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Parse as 2D array to heuristically find the true header row
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][];
+          
+          if (rows.length === 0) {
+            setError('Could not detect any data in the Excel file.');
+            setCsvStep('upload');
+            return;
+          }
+
+          let headerRowIdx = 0;
+          let maxScore = -1;
+
+          // Scan the first 30 rows to find the best header row (ignoring title/summary rows)
+          for (let i = 0; i < Math.min(30, rows.length); i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            const rowStr = row.join(' ').toLowerCase();
+            let score = 0;
+            if (rowStr.includes('date') || rowStr.includes('time') || rowStr.includes('txn')) score += 2;
+            if (rowStr.includes('amount') || rowStr.includes('debit') || rowStr.includes('credit')) score += 2;
+            if (rowStr.includes('merchant') || rowStr.includes('description') || rowStr.includes('particulars') || rowStr.includes('narration') || rowStr.includes('details')) score += 2;
+            if (rowStr.includes('balance')) score += 1;
+            
+            // Favor wider rows
+            const nonEmptyCount = row.filter(c => String(c).trim() !== '').length;
+            score += nonEmptyCount * 0.1;
+
+            if (score > maxScore) {
+              maxScore = score;
+              headerRowIdx = i;
+            }
+          }
+
+          // Fallback: if no obvious header keywords, pick the first row with at least 3 columns
+          if (maxScore < 2) {
+             for (let i = 0; i < Math.min(30, rows.length); i++) {
+                if (rows[i].filter(c => String(c).trim() !== '').length >= 3) {
+                   headerRowIdx = i;
+                   break;
+                }
+             }
+          }
+
+          const headerRow = rows[headerRowIdx] || [];
+          
+          // Ensure unique field names
+          const fields: string[] = [];
+          const seen = new Set<string>();
+          headerRow.forEach((h, idx) => {
+             let val = String(h).trim();
+             if (!val) val = `__EMPTY_${idx}`;
+             let finalVal = val;
+             let counter = 1;
+             while (seen.has(finalVal)) {
+               finalVal = `${val}_${counter}`;
+               counter++;
+             }
+             seen.add(finalVal);
+             fields.push(finalVal);
+          });
+
+          // Build objects from subsequent data rows
+          const json: Record<string, any>[] = [];
+          for (let i = headerRowIdx + 1; i < rows.length; i++) {
+            const rowArr = rows[i];
+            // Skip completely empty rows
+            if (!rowArr || rowArr.every(c => String(c).trim() === '')) continue;
+            
+            const obj: Record<string, any> = {};
+            fields.forEach((field, idx) => {
+              obj[field] = rowArr[idx] !== undefined ? rowArr[idx] : '';
+            });
+            json.push(obj);
+          }
+
+          if (json.length === 0) {
+            setError('Could not detect any valid data rows after the header in the Excel file.');
+            setCsvStep('upload');
+            return;
+          }
+          
+          handleData(fields, json);
+        } catch (err: any) {
+          setError(`Failed to parse Excel file: ${err.message}`);
+          setCsvStep('upload');
+        }
+      };
+      reader.onerror = () => {
+        setError('Failed to read the Excel file.');
+        setCsvStep('upload');
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        preview: 50,
+        complete: (results) => {
+          handleData(results.meta.fields || [], results.data);
+        },
+        error: (err) => {
+          setError(`Failed to parse CSV: ${err.message}`);
+          setCsvStep('upload');
+        },
+      });
+    }
   };
 
   // Submit manual single transaction
@@ -260,27 +373,60 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     }
   };
 
-  // Execute CSV bulk import
+  const handleAiAutoFill = async () => {
+    if (!aiText.trim()) return;
+    setIsAiLoading(true);
+    setError(null);
+    try {
+      const parsed = await parseExpenseWithAI(aiText);
+      if (parsed.amount) setAmount(parsed.amount.toString());
+      if (parsed.merchant) setMerchant(parsed.merchant);
+      if (parsed.date) setDate(parsed.date);
+      if (parsed.category) {
+        const matched = safeCategories.find(c => c.toLowerCase() === parsed.category?.toLowerCase());
+        setCategory(matched || parsed.category);
+      }
+      if (parsed.type === 'income' || parsed.type === 'expense') {
+        setType(parsed.type);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to parse with AI.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Execute CSV/XLSX bulk import
   const handleExecuteCsvImport = async () => {
     if (!csvFile) return;
     setLoading(true);
     setError(null);
 
-    try {
-      Papa.parse(csvFile, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          const parsedTxs: Partial<Transaction>[] = [];
+    const processData = async (data: any[]) => {
+      const parsedTxs: Partial<Transaction>[] = [];
 
-          for (const row of results.data as Record<string, any>[]) {
-            // 1. Date
+      for (const row of data as Record<string, any>[]) {
+        // 1. Date
             const rawDate = row[csvMapping.date];
             if (!rawDate) continue;
             let dateStr = String(rawDate).trim();
-            const d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-              dateStr = d.toISOString().split('T')[0];
+            let dObj = new Date(dateStr);
+            if (isNaN(dObj.getTime())) {
+              // Try parsing DD/MM/YYYY or DD-MM-YYYY
+              const parts = dateStr.split(/[\/\-]/);
+              if (parts.length === 3) {
+                let y = parts[2];
+                if (y.length === 2) y = `20${y}`;
+                const m = parts[1];
+                const d = parts[0];
+                dObj = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
+              }
+            }
+            if (!isNaN(dObj.getTime())) {
+              dateStr = dObj.toISOString().split('T')[0];
+            } else {
+              // Fallback to today's date if completely unparseable
+              dateStr = new Date().toISOString().split('T')[0];
             }
 
             // 2. Merchant
@@ -306,7 +452,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   txType = 'expense';
                 } else {
                   amountVal = num;
-                  txType = 'expense';
+                  txType = 'income';
                 }
               }
             }
@@ -341,7 +487,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
           }
 
           if (parsedTxs.length === 0) {
-            setError('No valid transactions could be parsed from the selected CSV columns. Please check your column mappings.');
+            setError('No valid transactions could be parsed from the selected columns. Please check your column mappings.');
             setLoading(false);
             return;
           }
@@ -359,8 +505,42 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             onSuccess();
           }
           setLoading(false);
-        },
-      });
+    };
+
+    try {
+      if (csvFile.name.endsWith('.xlsx') || csvFile.name.endsWith('.xls')) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' }) as Record<string, any>[];
+            await processData(json);
+          } catch (err: any) {
+            setError(err.message || 'Import failed');
+            setLoading(false);
+          }
+        };
+        reader.onerror = () => {
+          setError('Failed to read the Excel file.');
+          setLoading(false);
+        };
+        reader.readAsArrayBuffer(csvFile);
+      } else {
+        Papa.parse(csvFile, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            await processData(results.data);
+          },
+          error: (err) => {
+            setError(err.message || 'Import failed');
+            setLoading(false);
+          }
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Import failed');
       setLoading(false);
@@ -447,6 +627,44 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         {/* ================= MODE 1: MANUAL SINGLE ENTRY ================= */}
         {mode === 'manual' && (
           <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
+            
+            {/* AI Magic Entry */}
+            <div className="bg-violet-50/50 p-4 rounded-xl border border-violet-100 flex flex-col gap-2 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-10">
+                <span className="text-4xl">✨</span>
+              </div>
+              <label className="block text-xs font-bold text-violet-800 flex items-center gap-1.5">
+                <span>✨ Magic Auto-fill with AI</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Spent $15 on lunch at Chipotle yesterday"
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAiAutoFill();
+                    }
+                  }}
+                  className="flex-1 px-3.5 py-2.5 bg-white border border-violet-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:text-violet-300"
+                />
+                <button
+                  type="button"
+                  onClick={handleAiAutoFill}
+                  disabled={isAiLoading || !aiText.trim()}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center min-w-[80px]"
+                >
+                  {isAiLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Auto-fill'
+                  )}
+                </button>
+              </div>
+            </div>
+
             {/* Type segmented control */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Type</label>
@@ -561,10 +779,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                       key={t}
                       type="button"
                       onClick={() => handleToggleTag(t)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                        isSelected
-                          ? 'bg-violet-600 text-white'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${getTagColorClass(t)} ${
+                        isSelected ? 'ring-2 ring-violet-500 shadow-xs' : 'opacity-60 hover:opacity-100'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3" />}
@@ -609,7 +825,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   <input
                     id="file-receipt-upload"
                     type="file"
-                    accept="image/*,application/pdf,.csv"
+                    accept="image/*,application/pdf,.csv,.xlsx,.xls"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         const selected = e.target.files[0];
@@ -693,12 +909,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     type="button"
                     className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
                   >
-                    Select CSV File
+                    Select File (CSV/XLSX)
                   </button>
                   <input
                     id="csv-file-picker-input"
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -745,95 +961,6 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   </button>
                 </div>
 
-                {/* Column Mappings */}
-                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Detected Column Mapping
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Date */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Date Column <span className="text-rose-500">*</span>
-                      </label>
-                      <CustomSelect
-                        value={csvMapping.date}
-                        onChange={(val) => setCsvMapping({ ...csvMapping, date: val })}
-                        options={csvHeaders.map((h) => ({ value: h, label: h }))}
-                        placeholder="Select date column"
-                        fullWidth
-                        size="sm"
-                      />
-                    </div>
-
-                    {/* Merchant / Description */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Merchant / Description <span className="text-rose-500">*</span>
-                      </label>
-                      <CustomSelect
-                        value={csvMapping.merchant}
-                        onChange={(val) => setCsvMapping({ ...csvMapping, merchant: val })}
-                        options={csvHeaders.map((h) => ({ value: h, label: h }))}
-                        placeholder="Select merchant column"
-                        fullWidth
-                        size="sm"
-                      />
-                    </div>
-
-                    {/* Amount */}
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Amount Column <span className="text-rose-500">*</span>
-                      </label>
-                      <CustomSelect
-                        value={csvMapping.amount}
-                        onChange={(val) => setCsvMapping({ ...csvMapping, amount: val })}
-                        options={[
-                          { value: '', label: '-- Single Amount Column --' },
-                          ...csvHeaders.map((h) => ({ value: h, label: h })),
-                        ]}
-                        placeholder="Select amount column"
-                        fullWidth
-                        size="sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Target Account */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Import Into Account
-                      </label>
-                      <CustomSelect
-                        value={csvTargetAccount}
-                        onChange={setCsvTargetAccount}
-                        options={safeAccounts.map((a) => ({ value: a, label: a }))}
-                        placeholder="Select target account"
-                        fullWidth
-                        size="sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Optional Category Column
-                      </label>
-                      <CustomSelect
-                        value={csvMapping.category || ''}
-                        onChange={(val) => setCsvMapping({ ...csvMapping, category: val })}
-                        options={[
-                          { value: '', label: 'Auto-categorize by rules' },
-                          ...csvHeaders.map((h) => ({ value: h, label: h })),
-                        ]}
-                        placeholder="Select category column"
-                        fullWidth
-                        size="sm"
-                      />
-                    </div>
-                  </div>
-                </div>
 
                 {/* Data Preview Table */}
                 <div className="space-y-1.5">

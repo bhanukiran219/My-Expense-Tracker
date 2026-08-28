@@ -60,6 +60,16 @@ export interface Goal {
   note?: string;
 }
 
+export interface Loan {
+  id: string;
+  personName: string;
+  type: 'lent' | 'borrowed';
+  amount: number;
+  paidAmount: number;
+  dueDate?: string;
+  note?: string;
+}
+
 export interface RecurringItem {
   id: string;
   name: string;
@@ -113,6 +123,7 @@ export interface Settings {
   budgets: Budget[];
   subscriptions: SubscriptionItem[];
   recurring: RecurringItem[];
+  loans: Loan[];
   dismissedPatterns: string[];
   assetsTotal: number;
   liabilitiesTotal: number;
@@ -171,6 +182,7 @@ export const DEFAULT_SETTINGS: Settings = {
   budgets: [],
   subscriptions: [],
   recurring: [],
+  loans: [],
   dismissedPatterns: [],
   assetsTotal: 0,
   liabilitiesTotal: 0,
@@ -197,6 +209,7 @@ export type ActiveTab =
   | 'subscriptions'
   | 'budgets'
   | 'goals'
+  | 'loans'
   | 'documents'
   | 'rules'
   | 'rules-tags'

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Edit3, Check, AlertTriangle } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { updateTransaction } from '../../api';
+import { getTagColorClass } from '../../utils/tagColors';
 import { CustomSelect } from '../CustomSelect';
 import { CustomDatePicker } from '../CustomDatePicker';
 
@@ -275,10 +276,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                     key={t}
                     type="button"
                     onClick={() => handleToggleTag(t)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
-                      isSelected
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition ${getTagColorClass(t)} ${
+                      isSelected ? 'ring-2 ring-violet-500 shadow-xs' : 'opacity-60 hover:opacity-100'
                     }`}
                   >
                     {isSelected && <Check className="w-3 h-3" />}

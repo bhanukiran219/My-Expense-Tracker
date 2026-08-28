@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ActiveTab,
   AppState,
@@ -11,6 +11,9 @@ import {
   Settings,
   SubscriptionItem,
   Transaction,
+  Loan,
+  STARTER_CATEGORIES,
+  STARTER_ACCOUNTS,
 } from './types';
 import {
   fetchAppState,
@@ -39,6 +42,7 @@ import { RecurringView } from './components/RecurringView';
 import { SubscriptionsView } from './components/SubscriptionsView';
 import { BudgetsView } from './components/BudgetsView';
 import { GoalsView } from './components/GoalsView';
+import { LoansView } from './components/LoansView';
 import { DocumentsView } from './components/DocumentsView';
 import { RulesTagsView } from './components/RulesTagsView';
 import { SettingsView } from './components/SettingsView';
@@ -53,6 +57,7 @@ import { RecurringModal } from './components/modals/RecurringModal';
 import { SubscriptionModal } from './components/modals/SubscriptionModal';
 import { BudgetModal } from './components/modals/BudgetModal';
 import { GoalModal } from './components/modals/GoalModal';
+import { LoanModal } from './components/modals/LoanModal';
 import { RuleModal } from './components/modals/RuleModal';
 
 export const App: React.FC = () => {
@@ -60,6 +65,25 @@ export const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [period, setPeriod] = useState<DatePeriod>('this-month');
+  const [hiddenTxIds, setHiddenTxIds] = useState<Set<string>>(new Set());
+
+  const handleToggleTxVisibility = (id: string) => {
+    setHiddenTxIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const stateWithoutHidden = useMemo(() => {
+    if (!state) return state;
+    if (hiddenTxIds.size === 0) return state;
+    return {
+      ...state,
+      transactions: state.transactions.filter(tx => !hiddenTxIds.has(tx.id))
+    };
+  }, [state, hiddenTxIds]);
 
   // Modal Open States
   const [isAddEntryOpen, setIsAddEntryOpen] = useState(false);
@@ -82,12 +106,16 @@ export const App: React.FC = () => {
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+  const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
+
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
 
   // Initial Load
   const loadState = async () => {
     try {
+      setLoading(true);
       const data = await fetchAppState();
       setState(data);
     } catch (err) {
@@ -172,7 +200,7 @@ export const App: React.FC = () => {
       amount: pattern.averageAmount,
       cadence: pattern.cadence,
       nextDate: pattern.nextExpectedDate,
-      account: state.settings.accounts[0] || 'Main Checking',
+      account: state.settings.accounts?.[0] || 'Main Checking',
       active: true,
     };
     await handleSaveRecurring(newItem);
@@ -206,7 +234,7 @@ export const App: React.FC = () => {
       amount: pattern.averageAmount,
       cadence: pattern.cadence,
       nextRenewalDate: pattern.nextExpectedDate,
-      account: state.settings.accounts[0] || 'Everyday Visa',
+      account: state.settings.accounts?.[0] || 'Everyday Visa',
       active: true,
     };
     await handleSaveSubscription(newItem);
@@ -240,6 +268,21 @@ export const App: React.FC = () => {
   const handleDeleteGoal = async (id: string) => {
     const list = (state.settings.goals || []).filter((g) => g.id !== id);
     await handleUpdateSettings({ goals: list });
+  };
+
+  // --- Loan Handlers ---
+  const handleSaveLoan = async (loan: Loan) => {
+    const list = state.settings.loans || [];
+    const exists = list.some((l) => l.id === loan.id);
+    const updatedList = exists
+      ? list.map((l) => (l.id === loan.id ? loan : l))
+      : [...list, loan];
+    await handleUpdateSettings({ loans: updatedList });
+  };
+
+  const handleDeleteLoan = async (id: string) => {
+    const list = (state.settings.loans || []).filter((l) => l.id !== id);
+    await handleUpdateSettings({ loans: list });
   };
 
   // --- Rule Handlers ---
@@ -451,6 +494,15 @@ export const App: React.FC = () => {
       console.error('Failed to restore demo data:', err);
     }
   };
+  // Globally merge settings-defined categories/accounts with any unique ones found in transactions
+  const baseCategories = state?.settings?.categories?.length ? state.settings.categories : STARTER_CATEGORIES;
+  const baseAccounts = state?.settings?.accounts?.length ? state.settings.accounts : STARTER_ACCOUNTS;
+
+  const uniqueCategories = Array.from(new Set((state?.transactions || []).map((tx) => tx.category).filter(Boolean)));
+  const uniqueAccounts = Array.from(new Set((state?.transactions || []).map((tx) => tx.account).filter(Boolean)));
+  
+  const mergedCategories = Array.from(new Set([...baseCategories, ...uniqueCategories]));
+  const mergedAccounts = Array.from(new Set([...baseAccounts, ...uniqueAccounts]));
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row text-slate-900 font-sans antialiased">
@@ -476,7 +528,7 @@ export const App: React.FC = () => {
         <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
           {activeTab === 'dashboard' && (
             <DashboardView
-              state={state}
+              state={stateWithoutHidden!}
               period={period}
               onPeriodChange={setPeriod}
               onNavigateTab={setActiveTab}
@@ -488,6 +540,8 @@ export const App: React.FC = () => {
             <TransactionsView
               state={state}
               period={period}
+              hiddenTxIds={hiddenTxIds}
+              onToggleTxVisibility={handleToggleTxVisibility}
               onPeriodChange={setPeriod}
               onOpenAddEntry={() => setIsAddEntryOpen(true)}
               onOpenTagModal={(tx) => setTagModalTx(tx)}
@@ -502,7 +556,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'recurring' && (
             <RecurringView
-              state={state}
+              state={stateWithoutHidden!}
               onOpenAddModal={() => {
                 setEditingRecurring(null);
                 setIsRecurringModalOpen(true);
@@ -519,7 +573,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'subscriptions' && (
             <SubscriptionsView
-              state={state}
+              state={stateWithoutHidden!}
               onOpenAddModal={() => {
                 setEditingSubscription(null);
                 setIsSubscriptionModalOpen(true);
@@ -536,7 +590,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'budgets' && (
             <BudgetsView
-              state={state}
+              state={stateWithoutHidden!}
               onOpenAddBudget={() => {
                 setEditingBudget(null);
                 setIsBudgetModalOpen(true);
@@ -551,7 +605,7 @@ export const App: React.FC = () => {
 
           {activeTab === 'goals' && (
             <GoalsView
-              state={state}
+              state={stateWithoutHidden!}
               onOpenAddGoal={() => {
                 setEditingGoal(null);
                 setIsGoalModalOpen(true);
@@ -561,6 +615,21 @@ export const App: React.FC = () => {
                 setIsGoalModalOpen(true);
               }}
               onDeleteGoal={handleDeleteGoal}
+            />
+          )}
+
+          {activeTab === 'loans' && (
+            <LoansView
+              state={stateWithoutHidden!}
+              onOpenAddLoan={() => {
+                setEditingLoan(null);
+                setIsLoanModalOpen(true);
+              }}
+              onEditLoan={(l) => {
+                setEditingLoan(l);
+                setIsLoanModalOpen(true);
+              }}
+              onDeleteLoan={handleDeleteLoan}
             />
           )}
 
@@ -612,8 +681,8 @@ export const App: React.FC = () => {
       <AddEntryModal
         isOpen={isAddEntryOpen}
         onClose={() => setIsAddEntryOpen(false)}
-        categories={state.settings?.categories || []}
-        accounts={state.settings?.accounts || []}
+        categories={mergedCategories}
+        accounts={mergedAccounts}
         existingTags={(state.tags || []).map((t) => t.name)}
         onSuccess={(tx) => {
           if (tx) handleSaveTransaction(tx);
@@ -627,8 +696,8 @@ export const App: React.FC = () => {
         isOpen={isEditTxModalOpen}
         onClose={() => setIsEditTxModalOpen(false)}
         transaction={editingTx}
-        categories={state.settings?.categories || []}
-        accounts={state.settings?.accounts || []}
+        categories={mergedCategories}
+        accounts={mergedAccounts}
         existingTags={(state.tags || []).map((t) => t.name)}
         onSuccess={(tx) => {
           handleSaveTransaction(tx);
@@ -640,8 +709,8 @@ export const App: React.FC = () => {
       <ImportModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
-        categories={state.settings?.categories || []}
-        accounts={state.settings?.accounts || []}
+        categories={mergedCategories}
+        accounts={mergedAccounts}
         onSuccess={() => loadState()}
       />
 
@@ -676,8 +745,8 @@ export const App: React.FC = () => {
           setEditingRecurring(null);
         }}
         item={editingRecurring}
-        categories={state.settings?.categories || []}
-        accounts={state.settings?.accounts || []}
+        categories={mergedCategories}
+        accounts={mergedAccounts}
         onSave={handleSaveRecurring}
       />
 
@@ -688,8 +757,8 @@ export const App: React.FC = () => {
           setEditingSubscription(null);
         }}
         item={editingSubscription}
-        categories={state.settings?.categories || []}
-        accounts={state.settings?.accounts || []}
+        categories={mergedCategories}
+        accounts={mergedAccounts}
         onSave={handleSaveSubscription}
       />
 
@@ -700,7 +769,7 @@ export const App: React.FC = () => {
           setEditingBudget(null);
         }}
         budget={editingBudget}
-        categories={state.settings?.categories || []}
+        categories={mergedCategories}
         existingBudgets={state.settings?.budgets || []}
         onSave={handleSaveBudget}
         onDelete={handleDeleteBudget}
@@ -716,6 +785,13 @@ export const App: React.FC = () => {
         onSave={handleSaveGoal}
       />
 
+      <LoanModal
+        isOpen={isLoanModalOpen}
+        onClose={() => setIsLoanModalOpen(false)}
+        loan={editingLoan}
+        onSave={handleSaveLoan}
+      />
+
       <RuleModal
         isOpen={isRuleModalOpen}
         onClose={() => {
@@ -723,7 +799,7 @@ export const App: React.FC = () => {
           setEditingRule(null);
         }}
         rule={editingRule}
-        categories={state.settings?.categories || []}
+        categories={mergedCategories}
         onSave={handleSaveRule}
       />
     </div>

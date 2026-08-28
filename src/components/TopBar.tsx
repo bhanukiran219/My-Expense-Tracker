@@ -20,6 +20,7 @@ const TAB_TITLES: Record<ActiveTab, string> = {
   subscriptions: 'Subscriptions',
   budgets: 'Budgets',
   goals: 'Goals',
+  loans: 'Loans & Debts',
   documents: 'Documents',
   rules: 'Rules & Tags',
   'rules-tags': 'Rules & Tags',

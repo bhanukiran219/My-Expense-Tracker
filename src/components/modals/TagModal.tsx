@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, Plus } from 'lucide-react';
 import { Transaction } from '../../types';
+import { getTagColorClass } from '../../utils/tagColors';
 
 interface TagModalProps {
   isOpen: boolean;
@@ -87,10 +88,8 @@ export const TagModal: React.FC<TagModalProps> = ({
                       key={t}
                       type="button"
                       onClick={() => toggleTag(t)}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                        isSelected
-                          ? 'bg-violet-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${getTagColorClass(t)} ${
+                        isSelected ? 'ring-2 ring-violet-500 shadow-xs' : 'opacity-60 hover:opacity-100'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3" />}

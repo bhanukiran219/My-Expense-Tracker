@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
 import { db } from './db.js';
+import { GoogleGenAI, Type, Schema } from '@google/genai';
 
 export const router = express.Router();
 
@@ -10,6 +11,12 @@ const upload = multer({
     fileSize: 20 * 1024 * 1024, // 20 MB max
   },
   storage: multer.memoryStorage(),
+});
+
+// Middleware to set a default user
+router.use((req: Request, res: Response, next) => {
+  (req as any).userId = 'local-user';
+  next();
 });
 
 // Helper to decode tags in transaction
@@ -29,12 +36,13 @@ function formatTransaction(tx: any) {
 // 1. GET /api/state
 router.get('/state', async (req: Request, res: Response) => {
   try {
-    const rawTxs = await db.getTransactions(5000);
+    const userId = (req as any).userId;
+    const rawTxs = await db.getTransactions(userId, 5000);
     const transactions = rawTxs.map(formatTransaction);
-    const tags = await db.getTags();
-    const rules = await db.getRules();
-    const settings = await db.getSettings();
-    const documents = await db.getDocuments(100);
+    const tags = await db.getTags(userId);
+    const rules = await db.getRules(userId);
+    const settings = await db.getSettings(userId);
+    const documents = await db.getDocuments(userId, 100);
 
     res.json({
       success: true,
@@ -53,6 +61,7 @@ router.get('/state', async (req: Request, res: Response) => {
 // 2. POST /api/transactions
 router.post('/transactions', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const body = req.body;
     const items = Array.isArray(body) ? body : Array.isArray(body.transactions) ? body.transactions : [body];
 
@@ -107,10 +116,10 @@ router.post('/transactions', async (req: Request, res: Response) => {
 
       // Save global tags if new
       for (const t of tagsArr) {
-        await db.insertTag(t);
+        await db.insertTag(userId, t);
       }
 
-      const resInsert = await db.insertTransaction({
+      const resInsert = await db.insertTransaction(userId, {
         date,
         merchant: String(raw.merchant),
         category,
@@ -149,12 +158,13 @@ router.post('/transactions', async (req: Request, res: Response) => {
 // 3. PATCH /api/transactions
 router.patch('/transactions', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { id, date, merchant, category, amount, type, account, tags } = req.body;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Transaction ID is required' });
     }
 
-    const updated = await db.updateTransaction(id, { date, merchant, category, amount, type, account, tags });
+    const updated = await db.updateTransaction(userId, id, { date, merchant, category, amount, type, account, tags });
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Transaction not found' });
     }
@@ -172,12 +182,13 @@ router.patch('/transactions', async (req: Request, res: Response) => {
 // 4. DELETE /api/transactions/:id or query / body
 router.delete('/transactions/:id?', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const id = req.params.id || req.query.id || req.body.id;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Transaction ID is required' });
     }
 
-    const deleted = await db.deleteTransaction(String(id));
+    const deleted = await db.deleteTransaction(userId, String(id));
     res.json({
       success: deleted,
       message: deleted ? 'Transaction deleted' : 'Transaction not found',
@@ -191,13 +202,14 @@ router.delete('/transactions/:id?', async (req: Request, res: Response) => {
 // 5. PUT /api/preferences
 router.put('/preferences', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const preferences = req.body;
     if (!preferences || typeof preferences !== 'object') {
       return res.status(400).json({ success: false, error: 'Invalid preferences payload' });
     }
 
-    await db.updatePreferences(preferences);
-    const updatedSettings = await db.getSettings();
+    await db.updatePreferences(userId, preferences);
+    const updatedSettings = await db.getSettings(userId);
 
     res.json({
       success: true,
@@ -212,6 +224,7 @@ router.put('/preferences', async (req: Request, res: Response) => {
 // 6. POST /api/documents (Multipart Upload)
 router.post('/documents', upload.array('files'), async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files provided' });
@@ -232,10 +245,10 @@ router.post('/documents', upload.array('files'), async (req: Request, res: Respo
       const objectKey = `uploads/${crypto.randomUUID()}-${safeName}`;
 
       // Store in Supabase Storage
-      await db.saveR2Object(objectKey, file.buffer);
+      await db.saveR2Object(userId, objectKey, file.buffer);
 
       // Insert metadata into Supabase DB
-      const doc = await db.insertDocument({
+      const doc = await db.insertDocument(userId, {
         filename: file.originalname,
         mimeType: file.mimetype || 'application/octet-stream',
         size: file.size,
@@ -253,7 +266,7 @@ router.post('/documents', upload.array('files'), async (req: Request, res: Respo
       if (req.body.extractTransaction === 'true' && isReceiptLike) {
         // Grounded merchant estimation if provided in form
         if (req.body.merchant && req.body.amount) {
-          const resTx = await db.insertTransaction({
+          const resTx = await db.insertTransaction(userId, {
             date: req.body.date || new Date().toISOString().split('T')[0],
             merchant: String(req.body.merchant),
             category: req.body.category || 'Needs review',
@@ -285,12 +298,13 @@ router.post('/documents', upload.array('files'), async (req: Request, res: Respo
 // 7. GET /api/documents/:id/download
 router.get('/documents/:id/download', async (req: Request, res: Response) => {
   try {
-    const doc = await db.getDocumentById(req.params.id);
+    const userId = (req as any).userId;
+    const doc = await db.getDocumentById(userId, req.params.id);
     if (!doc) {
       return res.status(404).json({ success: false, error: 'Document not found' });
     }
 
-    const { buffer, exists } = await db.getR2Object(doc.objectKey);
+    const { buffer, exists } = await db.getR2Object(userId, doc.objectKey);
     if (!exists) {
       return res.status(404).json({ success: false, error: 'File object not found in storage' });
     }
@@ -307,7 +321,8 @@ router.get('/documents/:id/download', async (req: Request, res: Response) => {
 // 8. DELETE /api/documents/:id
 router.delete('/documents/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = await db.deleteDocument(req.params.id);
+    const userId = (req as any).userId;
+    const deleted = await db.deleteDocument(userId, req.params.id);
     res.json({
       success: deleted,
       message: deleted ? 'Document removed' : 'Document not found',
@@ -321,6 +336,7 @@ router.delete('/documents/:id', async (req: Request, res: Response) => {
 // 9. DELETE /api/state (Data Wipe)
 router.delete('/state', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { confirmation } = req.body;
     if (confirmation !== 'DELETE ALL LEDGERLY DATA') {
       return res.status(400).json({
@@ -329,7 +345,7 @@ router.delete('/state', async (req: Request, res: Response) => {
       });
     }
 
-    await db.wipeAllData();
+    await db.wipeAllData(userId);
 
     res.json({
       success: true,
@@ -345,11 +361,12 @@ router.delete('/state', async (req: Request, res: Response) => {
 // 10. Rules Routes
 router.post('/rules', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { whenText, thenText, enabled } = req.body;
     if (!whenText || !thenText) {
       return res.status(400).json({ success: false, error: 'whenText and thenText are required' });
     }
-    const rule = await db.insertRule(whenText, thenText, enabled !== undefined ? enabled : 1);
+    const rule = await db.insertRule(userId, whenText, thenText, enabled !== undefined ? enabled : 1);
     res.json({ success: true, rule });
   } catch (error: any) {
     console.error('Error inserting rule:', error);
@@ -359,9 +376,10 @@ router.post('/rules', async (req: Request, res: Response) => {
 
 router.patch('/rules/:id', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { id } = req.params;
     const { whenText, thenText, enabled } = req.body;
-    const rule = await db.updateRule(id, { whenText, thenText, enabled });
+    const rule = await db.updateRule(userId, id, { whenText, thenText, enabled });
     if (!rule) {
       return res.status(404).json({ success: false, error: 'Rule not found' });
     }
@@ -374,8 +392,9 @@ router.patch('/rules/:id', async (req: Request, res: Response) => {
 
 router.delete('/rules/:id', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { id } = req.params;
-    const deleted = await db.deleteRule(id);
+    const deleted = await db.deleteRule(userId, id);
     res.json({ success: deleted, message: deleted ? 'Rule deleted' : 'Rule not found' });
   } catch (error: any) {
     console.error('Error deleting rule:', error);
@@ -386,11 +405,12 @@ router.delete('/rules/:id', async (req: Request, res: Response) => {
 // 11. Tags Routes
 router.post('/tags', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: 'Tag name is required' });
     }
-    const created = await db.insertTag(name);
+    const created = await db.insertTag(userId, name);
     res.json({ success: true, tag: { name: name.trim(), createdAt: new Date().toISOString() } });
   } catch (error: any) {
     console.error('Error inserting tag:', error);
@@ -400,11 +420,71 @@ router.post('/tags', async (req: Request, res: Response) => {
 
 router.delete('/tags/:name', async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).userId;
     const { name } = req.params;
-    const deleted = await db.deleteTag(name);
+    const deleted = await db.deleteTag(userId, name);
     res.json({ success: deleted, message: deleted ? 'Tag deleted' : 'Tag not found' });
   } catch (error: any) {
     console.error('Error deleting tag:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 12. Parse Expense with AI
+router.post('/parse-expense', async (req: Request, res: Response) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, error: 'Text is required' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    
+    const responseSchema: Schema = {
+      type: Type.OBJECT,
+      properties: {
+        amount: {
+          type: Type.NUMBER,
+          description: "The amount of the transaction",
+        },
+        merchant: {
+          type: Type.STRING,
+          description: "The name of the merchant",
+        },
+        category: {
+          type: Type.STRING,
+          description: "A short category for the expense, e.g. Food, Transportation",
+        },
+        date: {
+          type: Type.STRING,
+          description: "The date of the transaction in YYYY-MM-DD format",
+        },
+        type: {
+          type: Type.STRING,
+          description: "Either 'income' or 'expense'",
+        }
+      },
+      required: ["amount", "merchant", "category", "date", "type"],
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: `Extract the transaction details from this text: "${text}". If a date is not mentioned, use today's date: ${new Date().toISOString().split('T')[0]}.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+      }
+    });
+
+    if (response.text) {
+      const parsed = JSON.parse(response.text);
+      res.json({ success: true, data: parsed });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to generate response' });
+    }
+
+  } catch (error: any) {
+    console.error('Error parsing expense with AI:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

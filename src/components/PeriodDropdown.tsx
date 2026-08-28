@@ -90,7 +90,7 @@ export const PeriodDropdown: React.FC<PeriodDropdownProps> = ({
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold rounded-2xl transition cursor-pointer ${
                       isSelected
                         ? 'bg-violet-600 text-white shadow-xs'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-violet-600'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">

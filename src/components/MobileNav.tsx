@@ -9,6 +9,7 @@ import {
   FileText,
   SlidersHorizontal,
   Settings as SettingsIcon,
+  HandCoins,
 } from 'lucide-react';
 import { ActiveTab } from '../types';
 
@@ -25,6 +26,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onSelectTab }) 
     { id: 'subscriptions', label: 'Subscriptions', icon: Sparkles },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
     { id: 'goals', label: 'Goals', icon: Target },
+    { id: 'loans', label: 'Loans & Debts', icon: HandCoins },
     { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'rules-tags', label: 'Rules & Tags', icon: SlidersHorizontal },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
