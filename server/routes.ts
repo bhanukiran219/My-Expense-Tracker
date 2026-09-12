@@ -232,20 +232,13 @@ router.post('/auth/google', async (req: Request, res: Response) => {
     if (!user && email) {
       user = await db.getUserByEmail(email);
       if (user) {
-        user = await db.linkGoogleAccount(user.id, googleId, email, picture);
+        user = await db.linkGoogleAccount(user.id, googleId, email, picture, name);
       }
     }
 
-    // If user doesn't exist yet:
-    // If a primary master user exists ('local-user'), link Google to it!
+    // If no existing user matched, create a brand-new user for them with their own name & email
     if (!user) {
-      const allUsers = await db.getUsersCount();
-      const firstUser = await db.getFirstUser();
-      if (allUsers === 1 && firstUser && firstUser.id === 'local-user') {
-        user = await db.linkGoogleAccount('local-user', googleId, email, picture);
-      } else {
-        user = await db.createGoogleUser(googleId, email, name || email.split('@')[0], picture);
-      }
+      user = await db.createGoogleUser(googleId, email, name || email.split('@')[0], picture);
     }
 
     if (!user) {

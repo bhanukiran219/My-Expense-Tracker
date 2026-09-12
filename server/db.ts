@@ -579,8 +579,7 @@ export class LocalDatabase {
   }
 
   public async createGoogleUser(googleId: string, email: string, name: string, picture?: string): Promise<DBUser> {
-    const isFirstUser = (!this.state.users || this.state.users.length === 0);
-    const userId = isFirstUser ? 'local-user' : `user_${crypto.randomBytes(8).toString('hex')}`;
+    const userId = `user_${crypto.randomBytes(8).toString('hex')}`;
 
     const newUser: DBUser = {
       id: userId,
@@ -597,12 +596,15 @@ export class LocalDatabase {
     return newUser;
   }
 
-  public async linkGoogleAccount(userId: string, googleId: string, email: string, picture?: string): Promise<DBUser | null> {
+  public async linkGoogleAccount(userId: string, googleId: string, email: string, picture?: string, name?: string): Promise<DBUser | null> {
     const user = await this.getUserById(userId);
     if (!user) return null;
     user.google_id = googleId;
     user.email = email.trim().toLowerCase();
-    if (picture && !user.picture) user.picture = picture;
+    if (picture) user.picture = picture;
+    if (name && (user.id !== 'local-user' || !user.username || user.username === 'Admin')) {
+      user.username = name.trim();
+    }
     this.saveState();
     return user;
   }

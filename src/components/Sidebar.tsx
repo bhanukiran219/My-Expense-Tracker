@@ -72,8 +72,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </motion.div>
           <div>
             <h1 className="font-bold text-base text-slate-900 tracking-tight leading-tight flex flex-col">
-              <span className="group-hover:text-violet-900 transition-colors">Bhanu</span>
-              <span className="text-violet-600 text-xs font-semibold tracking-wide">Expence Tracker</span>
+              <span className="group-hover:text-violet-900 transition-colors">
+                {currentUser?.username || 'Ledgerly'}
+              </span>
+              <span className="text-violet-600 text-xs font-semibold tracking-wide">Expense Tracker</span>
             </h1>
           </div>
         </div>
