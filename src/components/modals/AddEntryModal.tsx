@@ -548,24 +548,29 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleModalClose();
+      }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex justify-center items-start p-3 sm:p-4"
+    >
       <div
         id="modal-add-entry"
-        className={`w-full bg-white rounded-3xl shadow-2xl border border-slate-200 my-8 transition-all relative ${
+        className={`w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 m-auto transition-all relative ${
           mode === 'csv' ? 'max-w-2xl' : 'max-w-lg'
         }`}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-3xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center font-bold">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-3xl">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center font-bold shrink-0">
               {mode === 'csv' ? <FileSpreadsheet className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-bold text-slate-900 truncate">
                 {mode === 'csv' ? 'Import Transactions from CSV' : 'Add Transaction Entry'}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 truncate">
                 {mode === 'csv'
                   ? 'Bulk upload bank statements and statements'
                   : 'Record a single manual transaction or upload CSV'}
@@ -573,22 +578,24 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             </div>
           </div>
           <button
+            id="btn-close-add-entry"
             onClick={handleModalClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition shrink-0 ml-2 cursor-pointer touch-manipulation"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className="flex border-b border-slate-100 px-6 pt-3 bg-white">
+        <div className="flex border-b border-slate-100 px-4 sm:px-6 pt-3 bg-white overflow-x-auto no-scrollbar">
           <button
             type="button"
+            id="tab-manual-entry"
             onClick={() => {
               setMode('manual');
               setError(null);
             }}
-            className={`flex items-center gap-2 pb-3 text-xs font-bold transition border-b-2 mr-6 ${
+            className={`flex items-center gap-2 pb-3 text-xs font-bold transition border-b-2 mr-4 sm:mr-6 whitespace-nowrap shrink-0 cursor-pointer touch-manipulation ${
               mode === 'manual'
                 ? 'border-violet-600 text-violet-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -600,11 +607,12 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
           <button
             type="button"
+            id="tab-csv-entry"
             onClick={() => {
               setMode('csv');
               setError(null);
             }}
-            className={`flex items-center gap-2 pb-3 text-xs font-bold transition border-b-2 ${
+            className={`flex items-center gap-2 pb-3 text-xs font-bold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer touch-manipulation ${
               mode === 'csv'
                 ? 'border-violet-600 text-violet-700'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -626,17 +634,17 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
         {/* ================= MODE 1: MANUAL SINGLE ENTRY ================= */}
         {mode === 'manual' && (
-          <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleManualSubmit} noValidate className="p-4 sm:p-6 space-y-4">
             
             {/* AI Magic Entry */}
-            <div className="bg-violet-50/50 p-4 rounded-xl border border-violet-100 flex flex-col gap-2 relative overflow-hidden">
+            <div className="bg-violet-50/50 p-3.5 sm:p-4 rounded-xl border border-violet-100 flex flex-col gap-2 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-2 opacity-10">
                 <span className="text-4xl">✨</span>
               </div>
               <label className="block text-xs font-bold text-violet-800 flex items-center gap-1.5">
                 <span>✨ Magic Auto-fill with AI</span>
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   placeholder="e.g. Spent $15 on lunch at Chipotle yesterday"
@@ -648,7 +656,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                       handleAiAutoFill();
                     }
                   }}
-                  className="flex-1 px-3.5 py-2.5 bg-white border border-violet-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:text-violet-300"
+                  className="flex-1 min-w-0 px-3.5 py-2.5 bg-white border border-violet-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder:text-violet-300"
                 />
                 <button
                   type="button"
@@ -848,21 +856,22 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
             </div>
 
             {/* Form Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setMode('csv')}
-                className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1.5"
+                className="text-xs font-semibold text-violet-600 hover:text-violet-800 flex items-center justify-center sm:justify-start gap-1.5 py-1 cursor-pointer touch-manipulation"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Upload CSV instead</span>
               </button>
 
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-end gap-2.5">
                 <button
                   type="button"
+                  id="btn-cancel-add-entry"
                   onClick={handleModalClose}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition text-center cursor-pointer touch-manipulation"
                 >
                   Cancel
                 </button>
@@ -870,7 +879,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   id="btn-save-entry"
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-50 text-center cursor-pointer touch-manipulation active:scale-98"
                 >
                   {loading ? 'Saving...' : 'Save Transaction'}
                 </button>
@@ -881,7 +890,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
         {/* ================= MODE 2: UPLOAD CSV FILE (NO MANUAL FORM FIELDS) ================= */}
         {mode === 'csv' && (
-          <div className="p-6 space-y-5">
+          <div className="p-4 sm:p-6 space-y-5">
             {/* STEP 1: UPLOAD DROPZONE */}
             {csvStep === 'upload' && (
               <div className="space-y-4">

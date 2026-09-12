@@ -32,21 +32,21 @@ export const LoansView: React.FC<LoansViewProps> = ({
   const netBalance = totalOwedToYou - totalYouOwe;
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-4 sm:space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* 1. ACTIVE DETECTION STATUS BANNER */}
-      <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 font-bold shrink-0">
-            <HandCoins className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-300 font-bold shrink-0">
+            <HandCoins className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold">Loans & Debts Tracker</h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <h3 className="text-sm sm:text-base font-bold">Loans & Debts Tracker</h3>
+              <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 Active
               </span>
             </div>
-            <p className="text-xs text-emerald-100/70 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-emerald-100/70 mt-0.5">
               Manage money you lent to friends or borrowed from others.
             </p>
           </div>
@@ -54,48 +54,48 @@ export const LoansView: React.FC<LoansViewProps> = ({
 
         <button
           onClick={onOpenAddLoan}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4 text-emerald-600" />
           <span>Add loan / debt</span>
         </button>
       </div>
 
-      {/* 2. SUMMARY METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Total Owed To You
+      {/* 2. SUMMARY METRIC CARDS: 2-COL ON MOBILE */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
+            Owed To You
           </span>
-          <div className="text-2xl font-bold text-slate-900">
+          <div className="text-lg sm:text-2xl font-bold text-slate-900 truncate">
             {formatCurrency(totalOwedToYou)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Money expected to return
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            Expected back
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Total You Owe
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
+            You Owe
           </span>
-          <div className="text-2xl font-bold text-slate-900">
+          <div className="text-lg sm:text-2xl font-bold text-slate-900 truncate">
             {formatCurrency(totalYouOwe)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Money you need to pay back
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            To pay back
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+        <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
             Net Balance
           </span>
           <div>
-            <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <div className={`text-xl sm:text-2xl font-bold ${netBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {netBalance > 0 ? '+' : ''}{formatCurrency(netBalance)}
             </div>
-            <span className="text-xs font-semibold text-slate-400">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400">
               {netBalance >= 0 ? 'Surplus' : 'Deficit'}
             </span>
           </div>
@@ -104,8 +104,8 @@ export const LoansView: React.FC<LoansViewProps> = ({
 
       {/* 3. CONFIRMED LOANS LIST */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">Active Loans & Debts</h3>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">Active Loans & Debts</h3>
           <span className="text-xs text-slate-500">{loans.length} total</span>
         </div>
 
@@ -128,11 +128,11 @@ export const LoansView: React.FC<LoansViewProps> = ({
               return (
                 <div
                   key={loan.id}
-                  className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-4 md:gap-0"
+                  className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-3 sm:gap-4 md:gap-0"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${isLent ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                      <HandCoins className="w-5 h-5" />
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${isLent ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                      <HandCoins className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">

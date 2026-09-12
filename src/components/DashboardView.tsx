@@ -21,10 +21,13 @@ import {
   GraduationCap,
   Briefcase,
   MoreHorizontal,
+  CalendarClock,
+  ArrowRight,
 } from 'lucide-react';
 import { AppState, DatePeriod, Transaction } from '../types';
 import { formatCurrency, formatPercent, formatDateDisplay } from '../utils/currency';
 import { filterTransactionsByPeriod, getPeriodLabel, getPreviousPeriodTransactions } from '../utils/datePeriod';
+import { generateCashFlowForecast } from '../utils/cashFlow';
 import { PeriodDropdown } from './PeriodDropdown';
 
 interface DashboardViewProps {
@@ -83,6 +86,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Net worth calculation
   const netWorth = state.settings.assetsTotal - state.settings.liabilitiesTotal;
   const isNetWorthSet = state.settings.netWorthConfigured;
+
+  // 30-Day Forward-Looking Cash Flow Forecast
+  const cashFlowForecast = React.useMemo(() => {
+    return generateCashFlowForecast(state, { forecastDays: 30 });
+  }, [state]);
 
   // Category breakdown for list
   const categoryTotals: Record<string, number> = {};
@@ -169,14 +177,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .slice(0, 3);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 sm:space-y-6 pb-12">
       {/* CONTEXT HEADER & PERIOD DROPDOWN */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pt-1">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Good to see you.
           </h1>
-          <p className="text-xs md:text-sm text-slate-500 font-normal mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
             A calm overview built only from your saved records.
           </p>
         </div>
@@ -187,59 +195,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 5 SUMMARY CARDS MATCHING DESIGN */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
-        {/* 1. Net Worth (Dark Card) */}
-        <div className="bg-[#0f172a] rounded-2xl p-5 border border-slate-800 shadow-xs flex flex-col justify-between">
+      {/* 5 SUMMARY CARDS: 2-COL ON MOBILE, 5-COL ON XL */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-4">
+        {/* 1. Net Worth (Dark Card - Prominent Full Width on Mobile) */}
+        <div 
+          onClick={() => onNavigateTab('net-worth')}
+          className="col-span-2 sm:col-span-1 bg-[#0f172a] hover:bg-[#1e293b] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-xs flex flex-col justify-between cursor-pointer transition group"
+        >
           <div>
-            <div className="flex items-center justify-between text-slate-400 mb-3">
-              <span className="text-sm font-semibold text-slate-200">Net Worth</span>
-              <Wallet className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center justify-between text-slate-400 mb-2 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-slate-200 group-hover:text-white transition">Net Worth</span>
+              <Wallet className="w-4 h-4 text-emerald-400" />
             </div>
 
-            <div className="text-2xl sm:text-[26px] font-bold text-white tracking-tight leading-tight">
-              {isNetWorthSet ? formatCurrency(netWorth) : formatCurrency(0)}
+            <div className="text-xl sm:text-[26px] font-bold text-white tracking-tight leading-tight">
+              {formatCurrency(netWorth)}
             </div>
-            <p className="text-xs text-slate-400 mt-1 font-normal">
-              Assets minus liabilities
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-1 font-normal">
+              {state.settings.assetsTotal > 0 || state.settings.liabilitiesTotal > 0
+                ? `${state.settings.assets?.length || 0} assets, ${state.settings.liabilities?.length || 0} liabilities`
+                : 'Assets minus liabilities'}
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-            {isNetWorthSet ? (
-              <span className="truncate">Assets: {formatCurrency(state.settings.assetsTotal)}</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigateTab('settings')}
-                className="text-violet-400 hover:text-violet-300 font-medium text-xs transition cursor-pointer"
-              >
-                Configure in Settings &rarr;
-              </button>
-            )}
+          <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-800 text-[11px] sm:text-xs text-slate-400 flex items-center justify-between">
+            <span className="text-emerald-400 font-medium group-hover:underline flex items-center gap-1">
+              Manage Portfolio &rarr;
+            </span>
           </div>
         </div>
 
         {/* 2. Income (Green Accent Card) */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-emerald-500 flex flex-col justify-between hover:border-slate-300 transition">
+        <div className="col-span-1 bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-emerald-500 flex flex-col justify-between hover:border-slate-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-600 mb-3">
-              <span className="text-sm font-semibold text-slate-700">Income</span>
-              <ArrowUpRight className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center justify-between text-slate-600 mb-1.5 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">Income</span>
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
             </div>
 
-            <div className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
+            <div className="text-base sm:text-[24px] font-bold text-slate-900 tracking-tight leading-tight truncate">
               {formatCurrency(totalIncome)}
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-normal">
-              Saved income in this period
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 font-normal truncate">
+              Saved income
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
+          <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 font-medium truncate">
             {incomeDelta !== null ? (
-              <span className={`font-semibold flex items-center gap-1 ${incomeDelta >= 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
-                {incomeDelta >= 0 ? '+' : ''}{Math.round(incomeDelta)}% vs prior period
+              <span className={`font-semibold flex items-center gap-0.5 sm:gap-1 truncate ${incomeDelta >= 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                {incomeDelta >= 0 ? '+' : ''}{Math.round(incomeDelta)}% vs prior
               </span>
             ) : (
               <span>No trend yet</span>
@@ -248,25 +253,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* 3. Spending (Orange Accent Card) */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-amber-500 flex flex-col justify-between hover:border-slate-300 transition">
+        <div className="col-span-1 bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-amber-500 flex flex-col justify-between hover:border-slate-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-600 mb-3">
-              <span className="text-sm font-semibold text-slate-700">Spending</span>
-              <ArrowUpRight className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center justify-between text-slate-600 mb-1.5 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">Spending</span>
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
             </div>
 
-            <div className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
+            <div className="text-base sm:text-[24px] font-bold text-slate-900 tracking-tight leading-tight truncate">
               {formatCurrency(totalSpending)}
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-normal">
-              Saved expenses in this period
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 font-normal truncate">
+              Saved expenses
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
+          <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 font-medium truncate">
             {spendingDelta !== null ? (
-              <span className={`font-semibold flex items-center gap-1 ${spendingDelta <= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                {spendingDelta >= 0 ? '+' : ''}{Math.round(spendingDelta)}% vs prior period
+              <span className={`font-semibold flex items-center gap-0.5 sm:gap-1 truncate ${spendingDelta <= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {spendingDelta >= 0 ? '+' : ''}{Math.round(spendingDelta)}% vs prior
               </span>
             ) : (
               <span>No trend yet</span>
@@ -275,22 +280,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* 4. Savings Rate (Blue Accent Card) */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-sky-500 flex flex-col justify-between hover:border-slate-300 transition">
+        <div className="col-span-1 bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-xs border-t-[3px] border-t-sky-500 flex flex-col justify-between hover:border-slate-300 transition">
           <div>
-            <div className="flex items-center justify-between text-slate-600 mb-3">
-              <span className="text-sm font-semibold text-slate-700">Savings rate</span>
-              <ArrowUpRight className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center justify-between text-slate-600 mb-1.5 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">Savings rate</span>
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 shrink-0" />
             </div>
 
-            <div className="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
+            <div className="text-base sm:text-[24px] font-bold text-slate-900 tracking-tight leading-tight truncate">
               {formatPercent(savingsRate)}
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-normal">
-              (Income − spending) ÷ income
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1 font-normal truncate">
+              Income − spending
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400 font-medium">
+          <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 font-medium truncate">
             {hasPrevData ? (
               <span>Saved {formatCurrency(totalIncome - totalSpending, true)}</span>
             ) : (
@@ -300,42 +305,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* 5. Highest Spending (Purple Card) */}
-        <div className="bg-[#5046e5] text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:bg-[#4338ca] transition">
+        <div className="col-span-1 bg-[#5046e5] text-white rounded-2xl p-3 sm:p-5 shadow-xs flex flex-col justify-between hover:bg-[#4338ca] transition">
           <div>
-            <div className="flex items-center justify-between text-white/90 mb-3">
-              <span className="text-sm font-semibold text-white/95">Highest spending</span>
-              <ArrowUpRight className="w-4 h-4 text-white/70" />
+            <div className="flex items-center justify-between text-white/90 mb-1.5 sm:mb-3">
+              <span className="text-xs sm:text-sm font-semibold text-white/95 truncate">Top spend</span>
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white/70 shrink-0" />
             </div>
 
-            <div className="text-2xl sm:text-[26px] font-bold text-white tracking-tight leading-tight truncate">
+            <div className="text-base sm:text-[24px] font-bold text-white tracking-tight leading-tight truncate">
               {highestSpendCat ? highestSpendCat.name : 'None'}
             </div>
-            <p className="text-xs text-white/80 mt-1 font-normal truncate">
-              {highestSpendCat ? `${formatCurrency(highestSpendCat.amount)} in this period` : `${formatCurrency(0)} in this period`}
+            <p className="text-[10px] sm:text-xs text-white/80 mt-0.5 sm:mt-1 font-normal truncate">
+              {highestSpendCat ? formatCurrency(highestSpendCat.amount) : formatCurrency(0)}
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-white/20 text-xs text-white/85 font-medium">
+          <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-white/20 text-[10px] sm:text-xs text-white/85 font-medium truncate">
             {highestSpendCat ? (
-              <span>{Math.round(highestSpendCat.percentage)}% of total spending</span>
+              <span>{Math.round(highestSpendCat.percentage)}% of spending</span>
             ) : (
-              <span>No expenses in period</span>
+              <span>No expenses</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* CASH FLOW & CATEGORY CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow Chart (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+      {/* SAFE TO SPEND PREVIEW BANNER */}
+      <div
+        onClick={() => onNavigateTab('cash-flow')}
+        className="bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white rounded-2xl p-3.5 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer hover:shadow-md transition group"
+      >
+        <div className="flex items-center gap-3 sm:gap-3.5">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition">
+            <CalendarClock className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300" />
+          </div>
           <div>
-            <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-violet-200">Safe-to-Spend Forecast</span>
+              <span className="text-[9px] sm:text-[10px] bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded-full font-bold">
+                Next 30 Days
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 leading-snug">
+              Safe to spend today: <span className="font-extrabold text-emerald-300">{formatCurrency(cashFlowForecast.safeToSpendToday)}</span> • {formatCurrency(cashFlowForecast.safeToSpendWeekend)} this weekend
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-violet-100 group-hover:text-white shrink-0">
+          <span>Explore Cash Flow Runway</span>
+          <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition" />
+        </div>
+      </div>
+
+      {/* CASH FLOW & CATEGORY CHARTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Cash Flow Chart (2 cols) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900 tracking-tight">Cash flow</h3>
-                <p className="text-xs text-slate-500 mt-0.5 font-normal">Up to seven months of saved activity</p>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">Cash flow</h3>
+                <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 font-normal">Up to seven months of saved activity</p>
               </div>
-              <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs">
                 <span className="flex items-center gap-1.5 text-slate-600 font-medium">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#5046e5]"></span> Income
                 </span>
@@ -371,7 +403,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center group relative max-w-[48px]">
                         {/* Hover Tooltip */}
-                        <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-12 z-20 bg-slate-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg shadow-lg whitespace-nowrap transition-all duration-150">
+                        <div className={`hidden group-hover:block pointer-events-none absolute -top-12 z-20 bg-slate-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-lg shadow-lg whitespace-nowrap transition-all duration-150 ${
+                          i >= monthsData.length - 2 ? 'right-0' : i === 0 ? 'left-0' : 'left-1/2 -translate-x-1/2'
+                        }`}>
                           <div>{m.label}: +{formatCurrency(m.income)} / -{formatCurrency(m.expense)}</div>
                         </div>
 
@@ -413,10 +447,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Activity by Category (1 col) */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-900">Activity by Category</h3>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900">Activity by Category</h3>
               <span className="text-xs font-semibold text-slate-500">{getPeriodLabel(period)}</span>
             </div>
 
@@ -474,9 +508,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* RECENT ACTIVITY & INSIGHTS & COMING UP */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Recent Activity (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-slate-900">Recent Activity</h3>
             <button
@@ -534,9 +568,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Right column: Ledgerly Insights & Coming up */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Smart Insights Card */}
-          <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
             <div className="flex items-center gap-2 text-violet-300 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-violet-400" />
               <span>Smart Insights</span>
@@ -570,7 +604,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Coming Up Card */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-violet-600" />

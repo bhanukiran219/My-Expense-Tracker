@@ -1,0 +1,314 @@
+[
+  {
+    "config": {
+      "name": "Tablet 700x1000",
+      "width": 700,
+      "height": 1000
+    },
+    "page": {
+      "scrollWidth": 700,
+      "clientWidth": 700,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 107,
+      "modalBottom": 893,
+      "modalWidth": 512,
+      "modalHeight": 786,
+      "windowHeight": 1000,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "Tablet 720x1280",
+      "width": 720,
+      "height": 1280
+    },
+    "page": {
+      "scrollWidth": 720,
+      "clientWidth": 720,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 247,
+      "modalBottom": 1033,
+      "modalWidth": 512,
+      "modalHeight": 786,
+      "windowHeight": 1280,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "iPad Mini / Standard 768x1024",
+      "width": 768,
+      "height": 1024
+    },
+    "page": {
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 117,
+      "modalBottom": 907,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1024,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "Tablet 768x900",
+      "width": 768,
+      "height": 900
+    },
+    "page": {
+      "scrollWidth": 768,
+      "clientWidth": 768,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 55,
+      "modalBottom": 845,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 900,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "Android Tablet 800x1280",
+      "width": 800,
+      "height": 1280
+    },
+    "page": {
+      "scrollWidth": 800,
+      "clientWidth": 800,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 245,
+      "modalBottom": 1035,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1280,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "iPad 10.2 810x1080",
+      "width": 810,
+      "height": 1080
+    },
+    "page": {
+      "scrollWidth": 810,
+      "clientWidth": 810,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 145,
+      "modalBottom": 935,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1080,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "iPad Air 820x1180",
+      "width": 820,
+      "height": 1180
+    },
+    "page": {
+      "scrollWidth": 820,
+      "clientWidth": 820,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 195,
+      "modalBottom": 985,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1180,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "iPad Pro 10.5 834x1112",
+      "width": 834,
+      "height": 1112
+    },
+    "page": {
+      "scrollWidth": 834,
+      "clientWidth": 834,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 161,
+      "modalBottom": 951,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1112,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "iPad Pro 11 834x1194",
+      "width": 834,
+      "height": 1194
+    },
+    "page": {
+      "scrollWidth": 834,
+      "clientWidth": 834,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 202,
+      "modalBottom": 992,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1194,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "Tablet 900x1200",
+      "width": 900,
+      "height": 1200
+    },
+    "page": {
+      "scrollWidth": 900,
+      "clientWidth": 900,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 205,
+      "modalBottom": 995,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 1200,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": true,
+      "canScrollToSave": false
+    }
+  },
+  {
+    "config": {
+      "name": "Tablet 960x600 (Landscape)",
+      "width": 960,
+      "height": 600
+    },
+    "page": {
+      "scrollWidth": 960,
+      "clientWidth": 960,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 16,
+      "modalBottom": 806,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 600,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": false,
+      "canScrollToSave": true
+    }
+  },
+  {
+    "config": {
+      "name": "iPad Landscape 1024x768",
+      "width": 1024,
+      "height": 768
+    },
+    "page": {
+      "scrollWidth": 1024,
+      "clientWidth": 1024,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 16,
+      "modalBottom": 806,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 768,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": false,
+      "canScrollToSave": true
+    }
+  },
+  {
+    "config": {
+      "name": "Tablet 1000x700",
+      "width": 1000,
+      "height": 700
+    },
+    "page": {
+      "scrollWidth": 1000,
+      "clientWidth": 1000,
+      "overflow": false
+    },
+    "modal": {
+      "found": true,
+      "modalTop": 16,
+      "modalBottom": 806,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowHeight": 700,
+      "isClippedTop": false,
+      "isCloseBtnVisible": true,
+      "isSaveBtnVisible": false,
+      "canScrollToSave": true
+    }
+  }
+]

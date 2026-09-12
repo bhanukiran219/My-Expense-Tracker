@@ -132,10 +132,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex justify-center items-start p-3 sm:p-4">
       <div
         id="modal-edit-entry"
-        className="w-full bg-white rounded-3xl shadow-2xl border border-slate-200 my-8 transition-all relative max-w-lg"
+        className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 m-auto transition-all relative max-w-lg"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-3xl">
           <div className="flex items-center gap-3">

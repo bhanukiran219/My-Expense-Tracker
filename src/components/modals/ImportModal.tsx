@@ -372,15 +372,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       for (let i = 0; i < docFiles.length; i++) {
         formData.append('files', docFiles[i]);
       }
+      formData.append('extractTransaction', 'true');
       const res = await uploadDocuments(formData);
+      const extractedCount = res.extractedTransactions?.length || 0;
       setImportResult({
-        inserted: res.extractedTransactions?.length || 0,
+        inserted: extractedCount,
         duplicates: 0,
         skipped: 0,
         needsReview: res.documents.filter((d) => d.status === 'review').length,
       });
       setStep('result');
-      onSuccess(res.extractedTransactions?.length || 0);
+      onSuccess(extractedCount);
     } catch (err: any) {
       setError(err.message || 'Document upload failed');
     } finally {
@@ -389,10 +391,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex justify-center items-start p-3 sm:p-4">
       <div
         id="modal-import"
-        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8"
+        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden m-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">

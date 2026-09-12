@@ -1,11 +1,159 @@
 import { AppState, Settings, Transaction, DocumentRecord, Tag, Rule } from './types';
 
 const BASE_URL = '/api';
+const TOKEN_STORAGE_KEY = 'ledgerly_auth_token';
 
-// Removed Clerk token logic
+// Token Management Helpers
+export function getAuthToken(): string | null {
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+export function setAuthToken(token: string): void {
+  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+}
+
+export function clearAuthToken(): void {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const token = getAuthToken();
+  const headers = new Headers(init?.headers || {});
+  
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const res = await fetch(input, { ...init, headers });
+  
+  if (res.status === 401) {
+    window.dispatchEvent(new CustomEvent('ledgerly:unauthorized'));
+  }
+
+  return res;
+}
+
+// Auth API Methods
+export async function getAuthConfig(): Promise<{ googleClientId: string }> {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/config`);
+    if (!res.ok) return { googleClientId: '' };
+    const data = await res.json();
+    return { googleClientId: data.googleClientId || '' };
+  } catch {
+    return { googleClientId: '' };
+  }
+}
+
+export async function checkAuthStatus(): Promise<{
+  initialized: boolean;
+  authenticated: boolean;
+  user?: { id: string; username: string; email?: string; picture?: string };
+}> {
+  try {
+    const res = await authFetch(`${BASE_URL}/auth/status`, { cache: 'no-store' });
+    if (!res.ok) {
+      return { initialized: true, authenticated: false };
+    }
+    const data = await res.json();
+    return {
+      initialized: data.initialized ?? true,
+      authenticated: data.authenticated ?? false,
+      user: data.user,
+    };
+  } catch {
+    return { initialized: true, authenticated: false };
+  }
+}
+
+export async function setupMasterAccount(
+  password: string,
+  username = 'Admin'
+): Promise<{ success: boolean; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
+  const res = await fetch(`${BASE_URL}/auth/setup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to complete initial setup.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function login(
+  password: string,
+  username?: string
+): Promise<{ success: boolean; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Invalid password or username.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function loginWithGoogle(
+  credential: string
+): Promise<{ success: boolean; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
+  const res = await fetch(`${BASE_URL}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Google authentication failed.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function loginWithGoogleDemo(): Promise<{
+  success: boolean;
+  token: string;
+  user: { id: string; username: string; email?: string; picture?: string };
+}> {
+  const res = await fetch(`${BASE_URL}/auth/google/demo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Demo Google authentication failed.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await authFetch(`${BASE_URL}/auth/logout`, { method: 'POST' });
+  } catch (err) {
+    console.warn('Error during logout API call:', err);
+  } finally {
+    clearAuthToken();
+    window.dispatchEvent(new CustomEvent('ledgerly:unauthorized'));
+  }
+}
 
 export async function fetchState(): Promise<AppState> {
-  const res = await fetch(`${BASE_URL}/state`, { cache: 'no-store' });
+  const res = await authFetch(`${BASE_URL}/state`, { cache: 'no-store' });
   if (!res.ok) {
     throw new Error(`Failed to fetch state: ${res.statusText}`);
   }
@@ -29,7 +177,7 @@ export async function saveTransactions(transactions: Partial<Transaction>[]): Pr
   needsReview: number;
   items: Transaction[];
 }> {
-  const res = await fetch(`${BASE_URL}/transactions`, {
+  const res = await authFetch(`${BASE_URL}/transactions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ transactions }),
@@ -55,7 +203,7 @@ export async function updateTransaction(
   id: string,
   updates: Partial<Transaction>
 ): Promise<Transaction> {
-  const res = await fetch(`${BASE_URL}/transactions`, {
+  const res = await authFetch(`${BASE_URL}/transactions`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, ...updates }),
@@ -69,7 +217,7 @@ export async function updateTransaction(
 }
 
 export async function deleteTransaction(id: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/transactions/${id}`, {
+  const res = await authFetch(`${BASE_URL}/transactions/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -80,7 +228,7 @@ export async function deleteTransaction(id: string): Promise<boolean> {
 }
 
 export async function savePreferences(preferences: Partial<Settings>): Promise<Settings> {
-  const res = await fetch(`${BASE_URL}/preferences`, {
+  const res = await authFetch(`${BASE_URL}/preferences`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferences),
@@ -99,7 +247,7 @@ export async function uploadDocuments(formData: FormData): Promise<{
   documents: DocumentRecord[];
   extractedTransactions: Transaction[];
 }> {
-  const res = await fetch(`${BASE_URL}/documents`, {
+  const res = await authFetch(`${BASE_URL}/documents`, {
     method: 'POST',
     // Do NOT set Content-Type, fetch will automatically set it with the correct boundary for FormData
     body: formData,
@@ -111,8 +259,24 @@ export async function uploadDocuments(formData: FormData): Promise<{
   return res.json();
 }
 
+export async function extractDocumentTransaction(documentId: string): Promise<{
+  success: boolean;
+  transactions: Transaction[];
+  duplicates?: number;
+  message?: string;
+}> {
+  const res = await authFetch(`${BASE_URL}/documents/${documentId}/extract`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(errorData.error || 'Failed to extract transaction from document');
+  }
+  return res.json();
+}
+
 export async function deleteDocument(id: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/documents/${id}`, {
+  const res = await authFetch(`${BASE_URL}/documents/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -125,7 +289,7 @@ export async function deleteDocument(id: string): Promise<boolean> {
 export async function wipeState(
   confirmation: string
 ): Promise<{ success: boolean; message: string; driveResetAt: string }> {
-  const res = await fetch(`${BASE_URL}/state`, {
+  const res = await authFetch(`${BASE_URL}/state`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ confirmation }),
@@ -143,7 +307,7 @@ export async function wipeAllData(): Promise<boolean> {
 }
 
 export async function createRule(rule: Partial<Rule>): Promise<Rule> {
-  const res = await fetch(`${BASE_URL}/rules`, {
+  const res = await authFetch(`${BASE_URL}/rules`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(rule),
@@ -156,7 +320,7 @@ export async function createRule(rule: Partial<Rule>): Promise<Rule> {
 }
 
 export async function updateRule(id: string, updates: Partial<Rule>): Promise<Rule> {
-  const res = await fetch(`${BASE_URL}/rules/${id}`, {
+  const res = await authFetch(`${BASE_URL}/rules/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
@@ -169,7 +333,7 @@ export async function updateRule(id: string, updates: Partial<Rule>): Promise<Ru
 }
 
 export async function deleteRule(id: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/rules/${id}`, {
+  const res = await authFetch(`${BASE_URL}/rules/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -180,7 +344,7 @@ export async function deleteRule(id: string): Promise<boolean> {
 }
 
 export async function createTag(name: string): Promise<Tag> {
-  const res = await fetch(`${BASE_URL}/tags`, {
+  const res = await authFetch(`${BASE_URL}/tags`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
@@ -193,7 +357,7 @@ export async function createTag(name: string): Promise<Tag> {
 }
 
 export async function deleteTag(name: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/tags/${encodeURIComponent(name)}`, {
+  const res = await authFetch(`${BASE_URL}/tags/${encodeURIComponent(name)}`, {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -204,18 +368,30 @@ export async function deleteTag(name: string): Promise<boolean> {
 }
 
 export async function parseExpenseWithAI(text: string): Promise<Partial<Transaction>> {
-  const res = await fetch(`${BASE_URL}/parse-expense`, {
+  const res = await authFetch(`${BASE_URL}/parse-expense`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Failed to parse expense: ${errorText || res.statusText}`);
+  
+  let data: any = {};
+  try {
+    data = await res.json();
+  } catch {
+    // Ignore JSON parse error
   }
-  const data = await res.json();
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to parse expense');
+
+  if (!res.ok || !data.success) {
+    let errMsg = data.error || res.statusText || 'Failed to parse expense';
+    if (typeof errMsg === 'string' && errMsg.startsWith('{')) {
+      try {
+        const parsedErr = JSON.parse(errMsg);
+        errMsg = parsedErr?.error?.message || parsedErr?.message || errMsg;
+      } catch {
+        // use raw
+      }
+    }
+    throw new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
   }
   return data.data;
 }

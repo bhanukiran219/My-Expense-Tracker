@@ -4,10 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import { createServer as createViteServer } from 'vite';
 import { router as apiRouter } from './server/routes.js';
+import { exec } from 'child_process';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
   // JSON and URL-encoded body parsers
   app.use(express.json({ limit: '50mb' }));
@@ -24,7 +25,19 @@ async function startServer() {
   // Vite middleware for dev or static serving for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        watch: {
+          ignored: [
+            '**/data/**',
+            '**/data/**/*',
+            '**/data/db.json',
+            '**/server/**',
+            '**/*.json',
+            '**/.system_generated/**',
+          ],
+        },
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -37,7 +50,26 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Ledgerly Server] Running at http://0.0.0.0:${PORT}`);
+    const localUrl = `http://localhost:${PORT}`;
+    console.log(`\n==================================================`);
+    console.log(`  🚀 Ledgerly Expense Tracker`);
+    console.log(`  🔗 Local URL:  ${localUrl}`);
+    console.log(`  🌐 Network:    http://0.0.0.0:${PORT}`);
+    console.log(`==================================================\n`);
+
+    if (process.env.NODE_ENV !== 'production' && process.env.AUTO_OPEN !== 'false') {
+      const openCommand = process.platform === 'win32'
+        ? `start "" "${localUrl}"`
+        : process.platform === 'darwin'
+        ? `open "${localUrl}"`
+        : `xdg-open "${localUrl}"`;
+
+      exec(openCommand, (err) => {
+        if (err) {
+          // Non-critical: fail silently if browser cannot be launched
+        }
+      });
+    }
   });
 }
 

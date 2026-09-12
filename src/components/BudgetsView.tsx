@@ -59,21 +59,21 @@ export const BudgetsView: React.FC<BudgetsViewProps> = ({
   ).length;
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-4 sm:space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* 1. ACTIVE DETECTION STATUS BANNER */}
-      <div className="bg-gradient-to-r from-rose-900 to-orange-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-rose-300 font-bold shrink-0">
-            <PieChart className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-rose-900 to-orange-900 text-white rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-rose-300 font-bold shrink-0">
+            <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold">Monthly Category Budgets</h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <h3 className="text-sm sm:text-base font-bold">Monthly Category Budgets</h3>
+              <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 Active
               </span>
             </div>
-            <p className="text-xs text-rose-100/70 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-rose-100/70 mt-0.5">
               Spending vs. monthly limits for {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </p>
           </div>
@@ -81,68 +81,68 @@ export const BudgetsView: React.FC<BudgetsViewProps> = ({
 
         <button
           onClick={onOpenAddBudget}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4 text-rose-600" />
           <span>Create budget</span>
         </button>
       </div>
 
-      {/* 2. BUDGET HEALTH SUMMARY */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+      {/* 2. BUDGET HEALTH SUMMARY: 2-COL ON MOBILE */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
             Total Budgeted
           </span>
-          <div className="text-2xl font-bold text-slate-900">
+          <div className="text-xl sm:text-2xl font-bold text-slate-900">
             {formatCurrency(totalBudgetLimit)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block">
             Across {budgets.filter((b) => b.active).length} active categories
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Spent This Month
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
+            Spent
           </span>
           <div
-            className={`text-2xl font-bold ${
+            className={`text-lg sm:text-2xl font-bold truncate ${
               isOverallOverBudget ? 'text-rose-600' : 'text-slate-900'
             }`}
           >
             {formatCurrency(totalBudgetSpent)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            {formatPercent(overallPercent)} of total allowance used
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            {formatPercent(overallPercent)} used
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Budget Status
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
+            Status
           </span>
           {overBudgetCount > 0 ? (
-            <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>{overBudgetCount} category is over budget</span>
+            <div className="flex items-center gap-1.5 text-rose-600 font-bold text-xs sm:text-sm truncate">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">{overBudgetCount} over</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>All active budgets on track</span>
+            <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs sm:text-sm truncate">
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">On track</span>
             </div>
           )}
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Remaining: {formatCurrency(Math.max(0, totalBudgetLimit - totalBudgetSpent))}
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            Left: {formatCurrency(Math.max(0, totalBudgetLimit - totalBudgetSpent))}
           </span>
         </div>
       </div>
 
       {/* 3. BUDGET LIST */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">Active Budgets</h3>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">Active Budgets</h3>
           <span className="text-xs text-slate-500">{budgets.length} total</span>
         </div>
 
@@ -167,11 +167,11 @@ export const BudgetsView: React.FC<BudgetsViewProps> = ({
               return (
                 <div
                   key={budget.id}
-                  className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-4 md:gap-0"
+                  className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-3 sm:gap-4 md:gap-0"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
-                      <PieChart className="w-5 h-5" />
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
+                      <PieChart className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">{budget.category}</h4>

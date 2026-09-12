@@ -18,7 +18,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { AppState, DatePeriod, Transaction, STARTER_CATEGORIES, STARTER_ACCOUNTS } from '../types';
-import { formatCurrency, formatDateDisplay } from '../utils/currency';
+import { formatCurrency, formatDateDisplay, deduplicateList } from '../utils/currency';
 import { filterTransactionsByPeriod, getPeriodLabel } from '../utils/datePeriod';
 import { getTagColorClass } from '../utils/tagColors';
 import { getCategoryIcon } from '../utils/categoryIcons';
@@ -63,20 +63,21 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   // 1. Filter by period
   const periodFiltered = filterTransactionsByPeriod(state.transactions, period);
 
-  // Extract unique accounts and categories from existing transactions
-  const uniqueAccounts = Array.from(new Set(state.transactions.map((tx) => tx.account).filter(Boolean)));
-  const uniqueCategories = Array.from(new Set(state.transactions.map((tx) => tx.category).filter(Boolean)));
+  // Configured accounts & categories from Settings (strictly deduplicated)
+  const configuredAccounts = state.settings?.accounts && state.settings.accounts.length > 0
+    ? deduplicateList(state.settings.accounts)
+    : STARTER_ACCOUNTS;
+  const configuredCategories = state.settings?.categories && state.settings.categories.length > 0
+    ? deduplicateList(state.settings.categories)
+    : STARTER_CATEGORIES;
 
-  const baseCategories = state.settings?.categories?.length ? state.settings.categories : STARTER_CATEGORIES;
-  const baseAccounts = state.settings?.accounts?.length ? state.settings.accounts : STARTER_ACCOUNTS;
-
-  // Merge with settings and ensure uniqueness
-  const mergedAccounts = Array.from(new Set([...baseAccounts, ...uniqueAccounts]));
-  const mergedCategories = Array.from(new Set([...baseCategories, ...uniqueCategories]));
+  // Options for top filter toolbar
+  const existingAccounts = deduplicateList(state.transactions.map((tx) => tx.account));
+  const existingCategories = deduplicateList(state.transactions.map((tx) => tx.category));
 
   const accountOptions = [
     { value: 'all', label: 'All accounts' },
-    ...mergedAccounts.map((a) => ({
+    ...deduplicateList([...configuredAccounts, ...existingAccounts]).map((a) => ({
       value: a,
       label: a,
     })),
@@ -84,7 +85,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
 
   const categoryOptions = [
     { value: 'all', label: 'All categories' },
-    ...mergedCategories.map((c) => ({
+    ...deduplicateList([...configuredCategories, ...existingCategories]).map((c) => ({
       value: c,
       label: c,
     })),
@@ -137,6 +138,20 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     }
   };
 
+  // Inline Account Change handler
+  const handleAccountChange = async (tx: Transaction, newAccount: string) => {
+    if (tx.account === newAccount) return;
+    setUpdatingTxId(tx.id);
+    try {
+      const updated = await updateTransaction(tx.id, { account: newAccount });
+      onTransactionUpdated(updated);
+    } catch (err) {
+      console.error('Failed to update account:', err);
+    } finally {
+      setUpdatingTxId(null);
+    }
+  };
+
   // Inline Tag Removal handler
   const handleRemoveTag = async (tx: Transaction, tagToRemove: string) => {
     const updatedTags = tx.tags.filter((t) => t !== tagToRemove);
@@ -164,56 +179,56 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 sm:space-y-6 pb-12">
       {/* CONTEXT HEADER & PERIOD DROPDOWN */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pt-1">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Every entry, one clear view.
           </h1>
-          <p className="text-xs md:text-sm text-slate-500 font-normal mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
             Search, filter, categorize and tag your durable records.
           </p>
         </div>
 
         {/* Monthly / Period Dropdown positioned below TopBar Add Entry column */}
-        <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-start sm:self-auto">
           <button
             onClick={() => setIsTransactionsHidden(!isTransactionsHidden)}
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition shadow-xs"
+            className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition shadow-xs cursor-pointer"
             title={isTransactionsHidden ? "Show Transactions" : "Hide Transactions"}
           >
-            {isTransactionsHidden ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            {isTransactionsHidden ? <Eye className="w-4 h-4 sm:w-5 sm:h-5" /> : <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
           <PeriodDropdown period={period} onPeriodChange={onPeriodChange} />
         </div>
       </div>
 
       {/* FILTER & SEARCH TOOLBAR */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2" />
           <input
             id="input-transaction-search"
             type="text"
             placeholder="Search merchant, category or tag"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs md:text-sm font-medium text-slate-900 placeholder:text-slate-400 shadow-2xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition"
+            className="w-full pl-10 sm:pl-11 pr-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-2xl text-xs md:text-sm font-medium text-slate-900 placeholder:text-slate-400 shadow-2xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Filters: 3-column grid on mobile */}
+        <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5 w-full md:w-auto">
           {/* Type Filter */}
           <CustomSelect
             id="filter-type"
@@ -221,6 +236,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             onChange={setSelectedType}
             options={typeOptions}
             placeholder="All types"
+            size="sm"
+            fullWidth
           />
 
           {/* Account Filter */}
@@ -230,6 +247,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             onChange={setSelectedAccount}
             options={accountOptions}
             placeholder="All accounts"
+            size="sm"
+            fullWidth
           />
 
           {/* Category Filter */}
@@ -239,6 +258,8 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             onChange={setSelectedCategory}
             options={categoryOptions}
             placeholder="All categories"
+            size="sm"
+            fullWidth
           />
         </div>
       </div>
@@ -282,16 +303,16 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold text-[10px]">
-                  <th className="py-3.5 px-4 sm:px-6">Date & Merchant</th>
-                  <th className="py-3.5 px-4">Category (Inline)</th>
-                  <th className="py-3.5 px-4 hidden md:table-cell">Account</th>
-                  <th className="py-3.5 px-4">Tags</th>
-                  <th className="py-3.5 px-4 text-right">Amount</th>
-                  <th className="py-3.5 px-3 text-center w-20">Actions</th>
+                  <th className="py-3 px-3 sm:px-6">Date & Merchant</th>
+                  <th className="py-3 px-3 sm:px-4">Category (Inline)</th>
+                  <th className="py-3 px-3 sm:px-4 hidden md:table-cell">Account (Inline)</th>
+                  <th className="py-3 px-3 sm:px-4">Tags</th>
+                  <th className="py-3 px-3 sm:px-4 text-right">Amount</th>
+                  <th className="py-3 px-2 sm:px-3 text-center w-16 sm:w-20">Actions</th>
                 </tr>
               </thead>
               <tbody ref={parent as any} className="divide-y divide-slate-100 font-medium text-slate-800">
@@ -305,16 +326,16 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       className="hover:bg-slate-50/80 transition-colors group"
                     >
                       {/* Date & Merchant */}
-                      <td className="py-3.5 px-4 sm:px-6">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3 px-3 sm:px-6">
+                        <div className="flex items-center gap-2.5 sm:gap-3">
                           <div
-                            className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-xs ${
+                            className={`w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl flex items-center justify-center text-xs ${
                               tx.type === 'income'
                                 ? 'bg-emerald-50 text-emerald-700'
                                 : 'bg-slate-100 text-slate-700'
                             }`}
                           >
-                            {tx.type === 'income' ? <TrendingUp className="w-4 h-4" /> : getCategoryIcon(tx.category)}
+                            {tx.type === 'income' ? <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : getCategoryIcon(tx.category)}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
@@ -330,7 +351,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] text-slate-400 font-normal">
+                            <span className="text-[10px] sm:text-[11px] text-slate-400 font-normal">
                               {formatDateDisplay(tx.date)}
                             </span>
                           </div>
@@ -338,39 +359,58 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </td>
 
                       {/* Inline Category Editor */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3 px-3 sm:px-4">
                         {isTxHidden ? (
                           <span className="text-slate-400 font-bold">***</span>
                         ) : (
                           <CustomSelect
                             value={tx.category}
                             onChange={(newCat) => handleCategoryChange(tx, newCat)}
-                            options={mergedCategories.map((c) => ({
+                            options={deduplicateList([
+                              ...configuredCategories,
+                              ...(tx.category ? [tx.category] : []),
+                            ]).map((c) => ({
                               value: c,
                               label: c,
                             }))}
                             size="sm"
-                            className="min-w-[140px]"
+                            className="min-w-[130px] sm:min-w-[140px]"
                           />
                         )}
                       </td>
 
-                      {/* Account */}
-                      <td className="py-3.5 px-4 hidden md:table-cell text-slate-600 text-xs">
-                        {isTxHidden ? '***' : tx.account}
-                      </td>
-
-                      {/* Inline Tags */}
-                      <td className="py-3.5 px-4">
+                      {/* Inline Account Editor */}
+                      <td className="py-3 px-3 sm:px-4 hidden md:table-cell">
                         {isTxHidden ? (
                           <span className="text-slate-400 font-bold">***</span>
                         ) : (
-                          <div className="flex flex-wrap items-center gap-1.5">
+                          <CustomSelect
+                            value={tx.account}
+                            onChange={(newAcc) => handleAccountChange(tx, newAcc)}
+                            options={deduplicateList([
+                              ...configuredAccounts,
+                              ...(tx.account ? [tx.account] : []),
+                            ]).map((a) => ({
+                              value: a,
+                              label: a,
+                            }))}
+                            size="sm"
+                            className="min-w-[130px] sm:min-w-[140px]"
+                          />
+                        )}
+                      </td>
+
+                      {/* Inline Tags */}
+                      <td className="py-3 px-3 sm:px-4">
+                        {isTxHidden ? (
+                          <span className="text-slate-400 font-bold">***</span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                             {tx.tags &&
                               tx.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition cursor-pointer group/tag ${getTagColorClass(tag, 'hover:bg-rose-50 hover:text-rose-700')}`}
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold transition cursor-pointer group/tag ${getTagColorClass(tag, 'hover:bg-rose-50 hover:text-rose-700')}`}
                                   title="Click to remove tag"
                                   onClick={() => handleRemoveTag(tx, tag)}
                                 >
@@ -393,7 +433,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </td>
 
                       {/* Amount */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-3 sm:px-4 text-right">
                         <span
                           className={`font-bold text-xs sm:text-sm ${
                             tx.type === 'income' ? 'text-emerald-600' : 'text-slate-900'
@@ -404,7 +444,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-3 text-center">
+                      <td className="py-3 px-2 sm:px-3 text-center">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"

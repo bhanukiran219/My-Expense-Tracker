@@ -60,12 +60,50 @@ export interface DBSetting {
   updated_at: string;
 }
 
+export interface DBUser {
+  id: string;
+  username: string;
+  email?: string;
+  picture?: string;
+  google_id?: string;
+  password_hash?: string;
+  salt?: string;
+  created_at: string;
+}
+
+export interface DBSession {
+  token: string;
+  user_id: string;
+  created_at: string;
+  expires_at: number;
+}
+
+export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const s = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, s, 64).toString('hex');
+  return { hash, salt: s };
+}
+
+export function verifyPassword(password: string, hash: string, salt: string): boolean {
+  try {
+    const computedHash = crypto.scryptSync(password, salt, 64).toString('hex');
+    const hashBuf = Buffer.from(hash, 'hex');
+    const compBuf = Buffer.from(computedHash, 'hex');
+    if (hashBuf.length !== compBuf.length) return false;
+    return crypto.timingSafeEqual(hashBuf, compBuf);
+  } catch {
+    return false;
+  }
+}
+
 interface LocalDBState {
   transactions: DBTransaction[];
   tags: DBTag[];
   rules: DBRule[];
   documents: DBDocument[];
   settings: Record<string, Record<string, any>>; // userId -> settings object
+  users?: DBUser[];
+  sessions?: DBSession[];
 }
 
 export class LocalDatabase {
@@ -74,7 +112,9 @@ export class LocalDatabase {
     tags: [],
     rules: [],
     documents: [],
-    settings: {}
+    settings: {},
+    users: [],
+    sessions: []
   };
 
   constructor() {
@@ -86,6 +126,8 @@ export class LocalDatabase {
       if (fs.existsSync(DB_FILE)) {
         const data = fs.readFileSync(DB_FILE, 'utf-8');
         this.state = JSON.parse(data);
+        if (!this.state.users) this.state.users = [];
+        if (!this.state.sessions) this.state.sessions = [];
       } else {
         this.saveState();
       }
@@ -129,11 +171,15 @@ export class LocalDatabase {
   }
 
   public async insertTransaction(userId: string, tx: any): Promise<{ success: boolean; transaction?: any; isDuplicate?: boolean }> {
-    const fingerprint = this.buildFingerprint(tx.date, tx.merchant, tx.amount, tx.account);
+    const isManual = tx.source === 'manual' || !tx.source;
+    const baseFingerprint = this.buildFingerprint(tx.date, tx.merchant, tx.amount, tx.account);
+    const fingerprint = isManual ? `${baseFingerprint}|${tx.id || crypto.randomUUID()}` : baseFingerprint;
     
-    const existing = this.state.transactions.find(t => t.user_id === userId && t.fingerprint === fingerprint);
-    if (existing) {
-      return { success: false, isDuplicate: true, transaction: { ...existing, createdAt: existing.created_at } };
+    if (!isManual) {
+      const existing = this.state.transactions.find(t => t.user_id === userId && t.fingerprint === baseFingerprint);
+      if (existing) {
+        return { success: false, isDuplicate: true, transaction: { ...existing, createdAt: existing.created_at } };
+      }
     }
 
     const id = tx.id || crypto.randomUUID();
@@ -500,6 +546,127 @@ export class LocalDatabase {
     this.saveState();
     
     return true;
+  }
+
+  // --- Users & Authentication ---
+  public async getUsersCount(): Promise<number> {
+    return (this.state.users || []).length;
+  }
+
+  public async getUserByUsername(username: string): Promise<DBUser | null> {
+    const users = this.state.users || [];
+    return users.find(u => u.username.toLowerCase() === username.trim().toLowerCase()) || null;
+  }
+
+  public async getFirstUser(): Promise<DBUser | null> {
+    const users = this.state.users || [];
+    return users.length > 0 ? users[0] : null;
+  }
+
+  public async getUserById(id: string): Promise<DBUser | null> {
+    const users = this.state.users || [];
+    return users.find(u => u.id === id) || null;
+  }
+
+  public async getUserByGoogleId(googleId: string): Promise<DBUser | null> {
+    const users = this.state.users || [];
+    return users.find(u => u.google_id === googleId) || null;
+  }
+
+  public async getUserByEmail(email: string): Promise<DBUser | null> {
+    const users = this.state.users || [];
+    return users.find(u => u.email && u.email.toLowerCase() === email.trim().toLowerCase()) || null;
+  }
+
+  public async createGoogleUser(googleId: string, email: string, name: string, picture?: string): Promise<DBUser> {
+    const isFirstUser = (!this.state.users || this.state.users.length === 0);
+    const userId = isFirstUser ? 'local-user' : `user_${crypto.randomBytes(8).toString('hex')}`;
+
+    const newUser: DBUser = {
+      id: userId,
+      username: name.trim() || email.split('@')[0],
+      email: email.trim().toLowerCase(),
+      picture,
+      google_id: googleId,
+      created_at: new Date().toISOString(),
+    };
+
+    if (!this.state.users) this.state.users = [];
+    this.state.users.push(newUser);
+    this.saveState();
+    return newUser;
+  }
+
+  public async linkGoogleAccount(userId: string, googleId: string, email: string, picture?: string): Promise<DBUser | null> {
+    const user = await this.getUserById(userId);
+    if (!user) return null;
+    user.google_id = googleId;
+    user.email = email.trim().toLowerCase();
+    if (picture && !user.picture) user.picture = picture;
+    this.saveState();
+    return user;
+  }
+
+  public async createUser(username: string, password: string): Promise<DBUser> {
+    const trimmed = username.trim();
+    const existing = await this.getUserByUsername(trimmed);
+    if (existing) {
+      throw new Error(`User with username "${trimmed}" already exists.`);
+    }
+
+    const { hash, salt } = hashPassword(password);
+    // If this is the very first user, link to 'local-user' so all previous data is immediately inherited
+    const isFirstUser = (!this.state.users || this.state.users.length === 0);
+    const userId = isFirstUser ? 'local-user' : `user_${crypto.randomBytes(8).toString('hex')}`;
+
+    const newUser: DBUser = {
+      id: userId,
+      username: trimmed,
+      password_hash: hash,
+      salt: salt,
+      created_at: new Date().toISOString(),
+    };
+
+    if (!this.state.users) this.state.users = [];
+    this.state.users.push(newUser);
+    this.saveState();
+    return newUser;
+  }
+
+  public async createSession(userId: string, expiresInDays = 30): Promise<string> {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + expiresInDays * 24 * 60 * 60 * 1000;
+    
+    const session: DBSession = {
+      token,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      expires_at: expiresAt,
+    };
+
+    if (!this.state.sessions) this.state.sessions = [];
+    // Clean up expired sessions
+    this.state.sessions = this.state.sessions.filter(s => s.expires_at > Date.now());
+    this.state.sessions.push(session);
+    this.saveState();
+    return token;
+  }
+
+  public async getSession(token: string): Promise<DBSession | null> {
+    if (!token || !this.state.sessions) return null;
+    const session = this.state.sessions.find(s => s.token === token);
+    if (!session) return null;
+    if (session.expires_at < Date.now()) {
+      await this.deleteSession(token);
+      return null;
+    }
+    return session;
+  }
+
+  public async deleteSession(token: string): Promise<void> {
+    if (!this.state.sessions) return;
+    this.state.sessions = this.state.sessions.filter(s => s.token !== token);
+    this.saveState();
   }
 }
 

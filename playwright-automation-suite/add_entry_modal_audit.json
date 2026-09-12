@@ -1,0 +1,178 @@
+[
+  {
+    "testCase": "Mobile 320x568",
+    "manual": {
+      "found": true,
+      "modalWidth": 296,
+      "modalHeight": 1040,
+      "windowWidth": 320,
+      "windowHeight": 568,
+      "scrollWidth": 320,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": false,
+      "saveBtnCoordinates": {
+        "top": 963,
+        "bottom": 1015
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 296,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Mobile 360x800",
+    "manual": {
+      "found": true,
+      "modalWidth": 336,
+      "modalHeight": 1024,
+      "windowWidth": 360,
+      "windowHeight": 800,
+      "scrollWidth": 360,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": false,
+      "saveBtnCoordinates": {
+        "top": 963,
+        "bottom": 999
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 336,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Mobile 375x812",
+    "manual": {
+      "found": true,
+      "modalWidth": 351,
+      "modalHeight": 1024,
+      "windowWidth": 375,
+      "windowHeight": 812,
+      "scrollWidth": 375,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": false,
+      "saveBtnCoordinates": {
+        "top": 963,
+        "bottom": 999
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 351,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Landscape 568x320",
+    "manual": {
+      "found": true,
+      "modalWidth": 512,
+      "modalHeight": 994,
+      "windowWidth": 568,
+      "windowHeight": 320,
+      "scrollWidth": 568,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": false,
+      "saveBtnCoordinates": {
+        "top": 933,
+        "bottom": 969
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 544,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Landscape 667x375",
+    "manual": {
+      "found": true,
+      "modalWidth": 512,
+      "modalHeight": 786,
+      "windowWidth": 667,
+      "windowHeight": 375,
+      "scrollWidth": 667,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": false,
+      "saveBtnCoordinates": {
+        "top": 520,
+        "bottom": 556
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 635,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Tablet 768x1024",
+    "manual": {
+      "found": true,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowWidth": 768,
+      "windowHeight": 1024,
+      "scrollWidth": 768,
+      "isScrollable": false,
+      "isSaveBtnVisibleInViewport": true,
+      "saveBtnCoordinates": {
+        "top": 846,
+        "bottom": 882
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 672,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Laptop 1024x768",
+    "manual": {
+      "found": true,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowWidth": 1024,
+      "windowHeight": 768,
+      "scrollWidth": 1024,
+      "isScrollable": true,
+      "isSaveBtnVisibleInViewport": true,
+      "saveBtnCoordinates": {
+        "top": 718,
+        "bottom": 754
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 672,
+      "internalCulprits": []
+    }
+  },
+  {
+    "testCase": "Desktop 1920x1080",
+    "manual": {
+      "found": true,
+      "modalWidth": 512,
+      "modalHeight": 790,
+      "windowWidth": 1920,
+      "windowHeight": 1080,
+      "scrollWidth": 1920,
+      "isScrollable": false,
+      "isSaveBtnVisibleInViewport": true,
+      "saveBtnCoordinates": {
+        "top": 874,
+        "bottom": 910
+      },
+      "internalCulprits": []
+    },
+    "csv": {
+      "modalWidth": 672,
+      "internalCulprits": []
+    }
+  }
+]

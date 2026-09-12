@@ -12,11 +12,16 @@ import {
   SubscriptionItem,
   Transaction,
   Loan,
+  Asset,
+  Liability,
+  NetWorthSnapshot,
+  CashFlowEvent,
   STARTER_CATEGORIES,
   STARTER_ACCOUNTS,
 } from './types';
 import {
   fetchAppState,
+  saveTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
@@ -28,15 +33,23 @@ import {
   deleteTag,
   wipeAllData,
   importBatch,
+  checkAuthStatus,
+  logout,
 } from './api';
+import { deduplicateList } from './utils/currency';
+
+// Auth
+import { LoginView } from './components/auth/LoginView';
 
 // Components
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
-import { MobileNav } from './components/MobileNav';
+import { MobileDrawer } from './components/MobileDrawer';
 
 // Views
 import { DashboardView } from './components/DashboardView';
+import { CashFlowView } from './components/CashFlowView';
+import { NetWorthView } from './components/NetWorthView';
 import { TransactionsView } from './components/TransactionsView';
 import { RecurringView } from './components/RecurringView';
 import { SubscriptionsView } from './components/SubscriptionsView';
@@ -59,13 +72,93 @@ import { BudgetModal } from './components/modals/BudgetModal';
 import { GoalModal } from './components/modals/GoalModal';
 import { LoanModal } from './components/modals/LoanModal';
 import { RuleModal } from './components/modals/RuleModal';
+import { AssetModal } from './components/modals/AssetModal';
+import { LiabilityModal } from './components/modals/LiabilityModal';
 
 export const App: React.FC = () => {
   const [state, setState] = useState<AppState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSetupNeeded, setIsSetupNeeded] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ id: string; username: string; email?: string; picture?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [period, setPeriod] = useState<DatePeriod>('this-month');
   const [hiddenTxIds, setHiddenTxIds] = useState<Set<string>>(new Set());
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Persistent Net Worth privacy/hidden states
+  const [isNetWorthPrivacyMode, setIsNetWorthPrivacyMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ledgerly_nw_privacy') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [isHideAssets, setIsHideAssets] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ledgerly_nw_hide_assets') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [isHideLiabilities, setIsHideLiabilities] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ledgerly_nw_hide_liabilities') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [hiddenAssetIds, setHiddenAssetIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('ledgerly_nw_hidden_assets');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const [hiddenLiabilityIds, setHiddenLiabilityIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('ledgerly_nw_hidden_liabilities');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ledgerly_nw_privacy', String(isNetWorthPrivacyMode));
+      localStorage.setItem('ledgerly_nw_hide_assets', String(isHideAssets));
+      localStorage.setItem('ledgerly_nw_hide_liabilities', String(isHideLiabilities));
+      localStorage.setItem('ledgerly_nw_hidden_assets', JSON.stringify(Array.from(hiddenAssetIds)));
+      localStorage.setItem('ledgerly_nw_hidden_liabilities', JSON.stringify(Array.from(hiddenLiabilityIds)));
+    } catch (e) {
+      console.warn('Could not save privacy preferences to localStorage', e);
+    }
+  }, [isNetWorthPrivacyMode, isHideAssets, isHideLiabilities, hiddenAssetIds, hiddenLiabilityIds]);
+
+  const handleToggleHideAsset = (id: string) => {
+    setHiddenAssetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleHideLiability = (id: string) => {
+    setHiddenLiabilityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleToggleTxVisibility = (id: string) => {
     setHiddenTxIds((prev) => {
@@ -109,13 +202,21 @@ export const App: React.FC = () => {
   const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
 
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+
+  const [isLiabilityModalOpen, setIsLiabilityModalOpen] = useState(false);
+  const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
+
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
 
   // Initial Load
-  const loadState = async () => {
+  const loadState = async (isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial || !state) {
+        setLoading(true);
+      }
       const data = await fetchAppState();
       setState(data);
     } catch (err) {
@@ -126,10 +227,74 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadState();
+    let isMounted = true;
+    const initAuthAndState = async () => {
+      setAuthLoading(true);
+      try {
+        const status = await checkAuthStatus();
+        if (!isMounted) return;
+        setIsSetupNeeded(!status.initialized);
+        setIsAuthenticated(status.authenticated);
+        if (status.user) {
+          setCurrentUser(status.user);
+        }
+        if (status.authenticated) {
+          await loadState(true);
+        }
+      } catch (err) {
+        console.error('Failed to check authentication status:', err);
+      } finally {
+        if (isMounted) setAuthLoading(false);
+      }
+    };
+
+    initAuthAndState();
+
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false);
+      setState(null);
+    };
+
+    window.addEventListener('ledgerly:unauthorized', handleUnauthorized);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('ledgerly:unauthorized', handleUnauthorized);
+    };
   }, []);
 
-  if (loading || !state) {
+  const handleLogout = async () => {
+    await logout();
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setState(null);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+        <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-xs font-semibold tracking-widest uppercase text-slate-400">
+          Securing Ledgerly Session...
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <LoginView
+        isSetupMode={isSetupNeeded}
+        onSuccess={(user) => {
+          setIsAuthenticated(true);
+          setIsSetupNeeded(false);
+          setCurrentUser(user);
+          loadState(true);
+        }}
+      />
+    );
+  }
+
+  if (loading && !state) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
         <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -240,6 +405,163 @@ export const App: React.FC = () => {
     await handleSaveSubscription(newItem);
   };
 
+  const handleIgnoreSubscriptionSuggestion = async (patternKey: string) => {
+    const dismissed = [...(state.settings.dismissedPatterns || []), patternKey];
+    await handleUpdateSettings({ dismissedPatterns: dismissed });
+  };
+
+  // --- Cash Flow Mark-Paid & Undo Handlers ---
+  const handleMarkCashFlowEventPaid = async (event: CashFlowEvent): Promise<{ transactionId?: string }> => {
+    if (!state) return {};
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const txData: Partial<Transaction> = {
+        merchant: event.title,
+        amount: event.amount,
+        type: event.type,
+        category: event.category,
+        account: event.account || state.settings?.accounts?.[0] || 'Main Checking',
+        date: event.date <= today ? event.date : today,
+        tags: ['CashFlow-Paid'],
+        source: 'manual',
+      };
+
+      // 1. Save transaction to database
+      const saveRes = await saveTransactions([txData]);
+      const createdTx = saveRes.items?.[0];
+
+      // 2. Advance recurring bill due date if linked
+      if (event.sourceType === 'recurring' && event.sourceId) {
+        const recurringList = state.settings.recurring || [];
+        const item = recurringList.find((r) => r.id === event.sourceId);
+        if (item) {
+          const currentDue = event.date || item.nextDate || today;
+          const [y, m, d] = currentDue.split('-').map(Number);
+          const nextDateObj = new Date(y, m - 1, d);
+          if (item.cadence === 'weekly') nextDateObj.setDate(nextDateObj.getDate() + 7);
+          else if (item.cadence === 'biweekly') nextDateObj.setDate(nextDateObj.getDate() + 14);
+          else if (item.cadence === 'quarterly') nextDateObj.setMonth(nextDateObj.getMonth() + 3);
+          else if (item.cadence === 'annual') nextDateObj.setFullYear(nextDateObj.getFullYear() + 1);
+          else nextDateObj.setMonth(nextDateObj.getMonth() + 1);
+
+          const ny = nextDateObj.getFullYear();
+          const nm = String(nextDateObj.getMonth() + 1).padStart(2, '0');
+          const nd = String(nextDateObj.getDate()).padStart(2, '0');
+          const nextDateStr = `${ny}-${nm}-${nd}`;
+
+          const updatedRecurring = recurringList.map((r) =>
+            r.id === event.sourceId ? { ...r, nextDate: nextDateStr } : r
+          );
+          await handleUpdateSettings({ recurring: updatedRecurring });
+        }
+      }
+
+      // 3. Advance subscription renewal date if linked
+      if (event.sourceType === 'subscription' && event.sourceId) {
+        const subList = state.settings.subscriptions || [];
+        const item = subList.find((s) => s.id === event.sourceId);
+        if (item) {
+          const currentDue = event.date || item.nextRenewalDate || today;
+          const [y, m, d] = currentDue.split('-').map(Number);
+          const nextDateObj = new Date(y, m - 1, d);
+          if (item.cadence === 'weekly') nextDateObj.setDate(nextDateObj.getDate() + 7);
+          else if (item.cadence === 'biweekly') nextDateObj.setDate(nextDateObj.getDate() + 14);
+          else if (item.cadence === 'quarterly') nextDateObj.setMonth(nextDateObj.getMonth() + 3);
+          else if (item.cadence === 'annual') nextDateObj.setFullYear(nextDateObj.getFullYear() + 1);
+          else nextDateObj.setMonth(nextDateObj.getMonth() + 1);
+
+          const ny = nextDateObj.getFullYear();
+          const nm = String(nextDateObj.getMonth() + 1).padStart(2, '0');
+          const nd = String(nextDateObj.getDate()).padStart(2, '0');
+          const nextDateStr = `${ny}-${nm}-${nd}`;
+
+          const updatedSubs = subList.map((s) =>
+            s.id === event.sourceId ? { ...s, nextRenewalDate: nextDateStr } : s
+          );
+          await handleUpdateSettings({ subscriptions: updatedSubs });
+        }
+      }
+
+      // 4. Update loan paidAmount if linked
+      if (event.sourceType === 'loan_emi' && event.sourceId) {
+        const loanList = state.settings.loans || [];
+        const item = loanList.find((l) => l.id === event.sourceId);
+        if (item) {
+          const updatedLoans = loanList.map((l) =>
+            l.id === event.sourceId
+              ? { ...l, paidAmount: Math.min(l.amount, (l.paidAmount || 0) + event.amount) }
+              : l
+          );
+          await handleUpdateSettings({ loans: updatedLoans });
+        }
+      }
+
+      // 5. Refresh full application state
+      await loadState();
+      return { transactionId: createdTx?.id };
+    } catch (err) {
+      console.error('Failed to mark cash flow event as paid:', err);
+      throw err;
+    }
+  };
+
+  const handleUndoCashFlowPayment = async (undoData: {
+    transactionId?: string;
+    event: CashFlowEvent;
+    previousDate?: string;
+    previousPaidAmount?: number;
+  }) => {
+    if (!state) return;
+    try {
+      // 1. Delete created transaction if ID known or fallback to latest matching CashFlow-Paid
+      if (undoData.transactionId) {
+        await deleteTransaction(undoData.transactionId);
+      } else {
+        const found = state.transactions.find(
+          (t) =>
+            t.merchant.toLowerCase() === undoData.event.title.toLowerCase() &&
+            (t.tags || []).includes('CashFlow-Paid')
+        );
+        if (found) {
+          await deleteTransaction(found.id);
+        }
+      }
+
+      // 2. Revert recurring bill date if linked
+      if (undoData.event.sourceType === 'recurring' && undoData.event.sourceId && undoData.previousDate) {
+        const list = state.settings.recurring || [];
+        const updatedList = list.map((r) =>
+          r.id === undoData.event.sourceId ? { ...r, nextDate: undoData.previousDate! } : r
+        );
+        await handleUpdateSettings({ recurring: updatedList });
+      }
+
+      // 3. Revert subscription renewal date if linked
+      if (undoData.event.sourceType === 'subscription' && undoData.event.sourceId && undoData.previousDate) {
+        const list = state.settings.subscriptions || [];
+        const updatedList = list.map((s) =>
+          s.id === undoData.event.sourceId ? { ...s, nextRenewalDate: undoData.previousDate! } : s
+        );
+        await handleUpdateSettings({ subscriptions: updatedList });
+      }
+
+      // 4. Revert loan paid amount if linked
+      if (undoData.event.sourceType === 'loan_emi' && undoData.event.sourceId && undoData.previousPaidAmount !== undefined) {
+        const list = state.settings.loans || [];
+        const updatedList = list.map((l) =>
+          l.id === undoData.event.sourceId ? { ...l, paidAmount: undoData.previousPaidAmount! } : l
+        );
+        await handleUpdateSettings({ loans: updatedList });
+      }
+
+      // 5. Reload full application state
+      await loadState();
+    } catch (err) {
+      console.error('Failed to undo cash flow payment:', err);
+      throw err;
+    }
+  };
+
   // --- Budget Handlers ---
   const handleSaveBudget = async (budget: Budget) => {
     const list = state.settings.budgets || [];
@@ -283,6 +605,126 @@ export const App: React.FC = () => {
   const handleDeleteLoan = async (id: string) => {
     const list = (state.settings.loans || []).filter((l) => l.id !== id);
     await handleUpdateSettings({ loans: list });
+  };
+
+  // --- Net Worth / Asset Handlers ---
+  const handleSaveAsset = async (asset: Asset) => {
+    const list = state?.settings?.assets || [];
+    const exists = list.some((a) => a.id === asset.id);
+    const updatedList = exists
+      ? list.map((a) => (a.id === asset.id ? asset : a))
+      : [...list, asset];
+    const newAssetsTotal = updatedList.reduce((sum, a) => sum + (Number(a.value) || 0), 0);
+    await handleUpdateSettings({
+      assets: updatedList,
+      assetsTotal: newAssetsTotal,
+      netWorthConfigured: true,
+    });
+  };
+
+  const handleDeleteAsset = async (id: string) => {
+    const list = (state?.settings?.assets || []).filter((a) => a.id !== id);
+    const newAssetsTotal = list.reduce((sum, a) => sum + (Number(a.value) || 0), 0);
+    await handleUpdateSettings({
+      assets: list,
+      assetsTotal: newAssetsTotal,
+    });
+  };
+
+  // --- Liability Handlers ---
+  const handleSaveLiability = async (liability: Liability) => {
+    const list = state?.settings?.liabilities || [];
+    const exists = list.some((l) => l.id === liability.id);
+    const updatedList = exists
+      ? list.map((l) => (l.id === liability.id ? liability : l))
+      : [...list, liability];
+    const directTotal = updatedList.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+    const loansDebt =
+      state?.settings?.includeLoansInLiabilities !== false
+        ? (state?.settings?.loans || [])
+            .filter((l) => l.type === 'borrowed')
+            .reduce((sum, l) => sum + Math.max(0, l.amount - l.paidAmount), 0)
+        : 0;
+    await handleUpdateSettings({
+      liabilities: updatedList,
+      liabilitiesTotal: directTotal + loansDebt,
+      netWorthConfigured: true,
+    });
+  };
+
+  const handleDeleteLiability = async (id: string) => {
+    const list = (state?.settings?.liabilities || []).filter((l) => l.id !== id);
+    const directTotal = list.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+    const loansDebt =
+      state?.settings?.includeLoansInLiabilities !== false
+        ? (state?.settings?.loans || [])
+            .filter((l) => l.type === 'borrowed')
+            .reduce((sum, l) => sum + Math.max(0, l.amount - l.paidAmount), 0)
+        : 0;
+    await handleUpdateSettings({
+      liabilities: list,
+      liabilitiesTotal: directTotal + loansDebt,
+    });
+  };
+
+  const handleRecordSnapshot = async () => {
+    if (!state) return;
+    const assetsTotal = (state.settings.assets || []).reduce(
+      (sum, a) => sum + (Number(a.value) || 0),
+      0
+    );
+    const directLiabilities = (state.settings.liabilities || []).reduce(
+      (sum, l) => sum + (Number(l.amount) || 0),
+      0
+    );
+    const loansDebt =
+      state.settings.includeLoansInLiabilities !== false
+        ? (state.settings.loans || [])
+            .filter((l) => l.type === 'borrowed')
+            .reduce((sum, l) => sum + Math.max(0, l.amount - l.paidAmount), 0)
+        : 0;
+    const liabilitiesTotal = directLiabilities + loansDebt;
+    const today = new Date().toISOString().split('T')[0];
+
+    const snapshot: NetWorthSnapshot = {
+      id: crypto.randomUUID(),
+      date: today,
+      assetsTotal,
+      liabilitiesTotal,
+      netWorth: assetsTotal - liabilitiesTotal,
+    };
+
+    const existingHistory = state.settings.netWorthHistory || [];
+    const filteredHistory = existingHistory.filter((s) => s.date !== today);
+    const newHistory = [snapshot, ...filteredHistory];
+    await handleUpdateSettings({
+      netWorthHistory: newHistory,
+      assetsTotal,
+      liabilitiesTotal,
+      netWorthConfigured: true,
+    });
+  };
+
+  const handleDeleteSnapshot = async (id: string) => {
+    const list = (state?.settings?.netWorthHistory || []).filter((s) => s.id !== id);
+    await handleUpdateSettings({ netWorthHistory: list });
+  };
+
+  const handleToggleIncludeLoans = async (include: boolean) => {
+    if (!state) return;
+    const directLiabilities = (state.settings.liabilities || []).reduce(
+      (sum, l) => sum + (Number(l.amount) || 0),
+      0
+    );
+    const loansDebt = include
+      ? (state.settings.loans || [])
+          .filter((l) => l.type === 'borrowed')
+          .reduce((sum, l) => sum + Math.max(0, l.amount - l.paidAmount), 0)
+      : 0;
+    await handleUpdateSettings({
+      includeLoansInLiabilities: include,
+      liabilitiesTotal: directLiabilities + loansDebt,
+    });
   };
 
   // --- Rule Handlers ---
@@ -494,15 +936,16 @@ export const App: React.FC = () => {
       console.error('Failed to restore demo data:', err);
     }
   };
-  // Globally merge settings-defined categories/accounts with any unique ones found in transactions
-  const baseCategories = state?.settings?.categories?.length ? state.settings.categories : STARTER_CATEGORIES;
-  const baseAccounts = state?.settings?.accounts?.length ? state.settings.accounts : STARTER_ACCOUNTS;
+  // Use configured settings accounts and categories with clean deduplication
+  const baseCategories = state?.settings?.categories && state.settings.categories.length > 0 
+    ? deduplicateList(state.settings.categories) 
+    : STARTER_CATEGORIES;
+  const baseAccounts = state?.settings?.accounts && state.settings.accounts.length > 0 
+    ? deduplicateList(state.settings.accounts) 
+    : STARTER_ACCOUNTS;
 
-  const uniqueCategories = Array.from(new Set((state?.transactions || []).map((tx) => tx.category).filter(Boolean)));
-  const uniqueAccounts = Array.from(new Set((state?.transactions || []).map((tx) => tx.account).filter(Boolean)));
-  
-  const mergedCategories = Array.from(new Set([...baseCategories, ...uniqueCategories]));
-  const mergedAccounts = Array.from(new Set([...baseAccounts, ...uniqueAccounts]));
+  const mergedCategories = deduplicateList(baseCategories);
+  const mergedAccounts = deduplicateList(baseAccounts);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row text-slate-900 font-sans antialiased">
@@ -511,6 +954,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenImport={() => setIsImportOpen(true)}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* 2. MAIN WORKSPACE */}
@@ -522,10 +967,12 @@ export const App: React.FC = () => {
           onPeriodChange={setPeriod}
           onOpenAddEntry={() => setIsAddEntryOpen(true)}
           onOpenImport={() => setIsImportOpen(true)}
+          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          onLogout={handleLogout}
         />
 
         {/* VIEW CONTAINER */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
+        <main className="flex-1 p-3.5 sm:p-6 md:p-8 max-w-7xl w-full mx-auto pb-8">
           {activeTab === 'dashboard' && (
             <DashboardView
               state={stateWithoutHidden!}
@@ -533,6 +980,57 @@ export const App: React.FC = () => {
               onPeriodChange={setPeriod}
               onNavigateTab={setActiveTab}
               onOpenAddEntry={() => setIsAddEntryOpen(true)}
+            />
+          )}
+
+          {activeTab === 'cash-flow' && (
+            <CashFlowView
+              state={stateWithoutHidden!}
+              onUpdateSettings={handleUpdateSettings}
+              onMarkPaid={handleMarkCashFlowEventPaid}
+              onUndoPayment={handleUndoCashFlowPayment}
+              onLogTransaction={async (tx) => {
+                await saveTransactions([tx]);
+                await loadState();
+              }}
+              onNavigateTab={setActiveTab}
+            />
+          )}
+
+          {activeTab === 'net-worth' && (
+            <NetWorthView
+              state={stateWithoutHidden!}
+              onOpenAddAsset={() => {
+                setEditingAsset(null);
+                setIsAssetModalOpen(true);
+              }}
+              onEditAsset={(asset) => {
+                setEditingAsset(asset);
+                setIsAssetModalOpen(true);
+              }}
+              onDeleteAsset={handleDeleteAsset}
+              onOpenAddLiability={() => {
+                setEditingLiability(null);
+                setIsLiabilityModalOpen(true);
+              }}
+              onEditLiability={(liability) => {
+                setEditingLiability(liability);
+                setIsLiabilityModalOpen(true);
+              }}
+              onDeleteLiability={handleDeleteLiability}
+              onRecordSnapshot={handleRecordSnapshot}
+              onDeleteSnapshot={handleDeleteSnapshot}
+              onToggleIncludeLoans={handleToggleIncludeLoans}
+              isPrivacyMode={isNetWorthPrivacyMode}
+              onTogglePrivacyMode={() => setIsNetWorthPrivacyMode((prev) => !prev)}
+              isHideAssets={isHideAssets}
+              onToggleHideAssets={() => setIsHideAssets((prev) => !prev)}
+              isHideLiabilities={isHideLiabilities}
+              onToggleHideLiabilities={() => setIsHideLiabilities((prev) => !prev)}
+              hiddenAssetIds={hiddenAssetIds}
+              onToggleHideAsset={handleToggleHideAsset}
+              hiddenLiabilityIds={hiddenLiabilityIds}
+              onToggleHideLiability={handleToggleHideLiability}
             />
           )}
 
@@ -637,6 +1135,7 @@ export const App: React.FC = () => {
             <DocumentsView
               state={state}
               onOpenImport={() => setIsImportOpen(true)}
+              onRefreshState={loadState}
               onDocumentDeleted={(id) => {
                 setState((prev) =>
                   prev ? { ...prev, documents: prev.documents.filter((d) => d.id !== id) } : prev
@@ -674,8 +1173,18 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* 3. MOBILE NAVIGATION BAR */}
-      <MobileNav activeTab={activeTab} onSelectTab={setActiveTab} />
+      {/* 3. MOBILE NAVIGATION DRAWER (HAMBURGER MENU) */}
+      <MobileDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onOpenAddEntry={() => setIsAddEntryOpen(true)}
+        onOpenImport={() => setIsImportOpen(true)}
+        documentCount={state?.documents?.length || 0}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+      />
 
       {/* 4. MODALS */}
       <AddEntryModal
@@ -801,6 +1310,26 @@ export const App: React.FC = () => {
         rule={editingRule}
         categories={mergedCategories}
         onSave={handleSaveRule}
+      />
+
+      <AssetModal
+        isOpen={isAssetModalOpen}
+        onClose={() => {
+          setIsAssetModalOpen(false);
+          setEditingAsset(null);
+        }}
+        asset={editingAsset}
+        onSave={handleSaveAsset}
+      />
+
+      <LiabilityModal
+        isOpen={isLiabilityModalOpen}
+        onClose={() => {
+          setIsLiabilityModalOpen(false);
+          setEditingLiability(null);
+        }}
+        liability={editingLiability}
+        onSave={handleSaveLiability}
       />
     </div>
   );

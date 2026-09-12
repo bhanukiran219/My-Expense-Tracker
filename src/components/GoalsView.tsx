@@ -25,21 +25,21 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
   const overallProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-4 sm:space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* 1. ACTIVE DETECTION STATUS BANNER */}
-      <div className="bg-gradient-to-r from-indigo-900 to-blue-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-indigo-300 font-bold shrink-0">
-            <Target className="w-6 h-6" />
+      <div className="bg-gradient-to-r from-indigo-900 to-blue-900 text-white rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-indigo-300 font-bold shrink-0">
+            <Target className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold">Savings & Milestones</h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <h3 className="text-sm sm:text-base font-bold">Savings & Milestones</h3>
+              <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                 Active
               </span>
             </div>
-            <p className="text-xs text-indigo-100/70 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-indigo-100/70 mt-0.5">
               Track dedicated targets for emergency funds, vacations, and large purchases
             </p>
           </div>
@@ -47,56 +47,56 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
 
         <button
           onClick={onOpenAddGoal}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4 text-indigo-600" />
           <span>Create goal</span>
         </button>
       </div>
 
-      {/* 2. SUMMARY METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+      {/* 2. SUMMARY METRIC CARDS: 2-COL ON MOBILE */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="col-span-2 sm:col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
             Total Target
           </span>
-          <div className="text-2xl font-bold text-slate-900">
+          <div className="text-xl sm:text-2xl font-bold text-slate-900">
             {formatCurrency(totalTarget)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block">
             Across {goals.length} goals
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
             Total Saved
           </span>
-          <div className="text-2xl font-bold text-emerald-600">
+          <div className="text-lg sm:text-2xl font-bold text-emerald-600 truncate">
             {formatCurrency(totalSaved)}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            {formatPercent(overallProgress)} completed overall
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            {formatPercent(overallProgress)} done
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-            Remaining to Save
+        <div className="col-span-1 bg-white rounded-2xl p-3.5 sm:p-5 border border-slate-200 shadow-xs">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1 truncate">
+            Remaining
           </span>
-          <div className="text-2xl font-bold text-slate-900">
+          <div className="text-lg sm:text-2xl font-bold text-slate-900 truncate">
             {formatCurrency(Math.max(0, totalTarget - totalSaved))}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            To reach all milestones
+          <span className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1 block truncate">
+            To reach goals
           </span>
         </div>
       </div>
 
       {/* 3. GOALS LIST */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-bold text-slate-900">Active Goals</h3>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900">Active Goals</h3>
           <span className="text-xs text-slate-500">{goals.length} total</span>
         </div>
 
@@ -120,11 +120,11 @@ export const GoalsView: React.FC<GoalsViewProps> = ({
               return (
                 <div
                   key={goal.id}
-                  className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-4 md:gap-0"
+                  className="px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 transition gap-3 sm:gap-4 md:gap-0"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
-                      <Target className="w-5 h-5" />
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+                      <Target className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">{goal.name}</h4>

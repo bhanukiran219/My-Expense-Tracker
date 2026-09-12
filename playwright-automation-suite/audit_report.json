@@ -1,0 +1,164 @@
+{
+  "summary": {
+    "totalPagesTested": 12,
+    "totalViewportsTested": 89,
+    "totalIssuesFound": 1,
+    "criticalIssues": 0,
+    "highIssues": 0,
+    "mediumIssues": 1,
+    "lowIssues": 0,
+    "issuesFixed": 0,
+    "issuesRemaining": 0,
+    "finalStatus": "PENDING"
+  },
+  "overflows": [
+    {
+      "category": "MOBILE",
+      "viewport": "320x568 (Mobile 320x568)",
+      "tab": "dashboard",
+      "scrollWidth": 325,
+      "innerWidth": 320,
+      "diff": 5,
+      "culprits": [
+        {
+          "tagName": "BUTTON",
+          "id": "mobile-nav-settings",
+          "className": "relative flex flex-col items-center justify-center",
+          "right": 935,
+          "width": 70,
+          "diff": 615
+        },
+        {
+          "tagName": "SPAN",
+          "id": "",
+          "className": "relative z-10 text-[11px] leading-tight whitespace-nowrap",
+          "right": 920,
+          "width": 39,
+          "diff": 600
+        },
+        {
+          "tagName": "DIV",
+          "id": "",
+          "className": "relative z-10",
+          "right": 910,
+          "width": 20,
+          "diff": 590
+        },
+        {
+          "tagName": "svg",
+          "id": "",
+          "className": "",
+          "right": 910,
+          "width": 20,
+          "diff": 590
+        },
+        {
+          "tagName": "path",
+          "id": "",
+          "className": "",
+          "right": 908,
+          "width": 15,
+          "diff": 588
+        }
+      ]
+    }
+  ],
+  "modalIssues": [],
+  "zoomIssues": [
+    {
+      "zoomLevel": "80%",
+      "diff": 320,
+      "culprits": []
+    },
+    {
+      "zoomLevel": "90%",
+      "diff": 142,
+      "culprits": []
+    },
+    {
+      "zoomLevel": "175%",
+      "diff": 60,
+      "culprits": [
+        {
+          "tagName": "DIV",
+          "id": "",
+          "className": "flex items-center gap-1.5",
+          "right": 1340,
+          "width": 275,
+          "diff": 60
+        },
+        {
+          "tagName": "BUTTON",
+          "id": "",
+          "className": "flex items-center gap-1 px-3 py-1.5",
+          "right": 1340,
+          "width": 152,
+          "diff": 60
+        },
+        {
+          "tagName": "BUTTON",
+          "id": "",
+          "className": "px-3.5 py-1.5 text-xs font-bold rounded-lg",
+          "right": 1329,
+          "width": 262,
+          "diff": 49
+        },
+        {
+          "tagName": "SPAN",
+          "id": "",
+          "className": "",
+          "right": 1319,
+          "width": 86,
+          "diff": 39
+        }
+      ]
+    },
+    {
+      "zoomLevel": "200%",
+      "diff": 160,
+      "culprits": [
+        {
+          "tagName": "BUTTON",
+          "id": "",
+          "className": "px-3.5 py-1.5 text-xs font-bold rounded-lg",
+          "right": 1518,
+          "width": 299,
+          "diff": 238
+        },
+        {
+          "tagName": "DIV",
+          "id": "",
+          "className": "flex items-center gap-1.5",
+          "right": 1440,
+          "width": 315,
+          "diff": 160
+        },
+        {
+          "tagName": "BUTTON",
+          "id": "",
+          "className": "flex items-center gap-1 px-3 py-1.5",
+          "right": 1440,
+          "width": 174,
+          "diff": 160
+        },
+        {
+          "tagName": "SPAN",
+          "id": "",
+          "className": "",
+          "right": 1416,
+          "width": 98,
+          "diff": 136
+        },
+        {
+          "tagName": "DIV",
+          "id": "",
+          "className": "flex flex-wrap items-center gap-2.5",
+          "right": 1385,
+          "width": 209,
+          "diff": 105
+        }
+      ]
+    }
+  ],
+  "consoleErrors": []
+}

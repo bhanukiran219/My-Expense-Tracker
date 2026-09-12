@@ -1,6 +1,6 @@
 export type TransactionType = 'expense' | 'income';
 export type TransactionSource = 'manual' | 'csv' | 'document' | 'google-drive';
-export type DocumentStatus = 'queued' | 'stored' | 'review';
+export type DocumentStatus = 'queued' | 'stored' | 'review' | 'extracted';
 export type DocumentSource = 'upload' | 'google-drive';
 export type Cadence = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual';
 export type DatePeriod = 'all-time' | 'this-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'this-year';
@@ -116,6 +116,82 @@ export interface DriveSyncStats {
   errors: string[];
 }
 
+export type AssetCategory =
+  | 'cash'
+  | 'investment'
+  | 'real_estate'
+  | 'crypto'
+  | 'vehicle'
+  | 'precious_metals'
+  | 'other';
+
+export type LiabilityCategory =
+  | 'credit_card'
+  | 'mortgage'
+  | 'student_loan'
+  | 'auto_loan'
+  | 'personal_loan'
+  | 'other';
+
+export interface Asset {
+  id: string;
+  name: string;
+  category: AssetCategory;
+  institution?: string;
+  value: number;
+  growthRate?: number;
+  note?: string;
+  updatedAt: string;
+}
+
+export interface Liability {
+  id: string;
+  name: string;
+  category: LiabilityCategory;
+  institution?: string;
+  amount: number;
+  interestRate?: number;
+  monthlyPayment?: number;
+  dueDate?: string;
+  note?: string;
+  linkedLoanId?: string;
+  updatedAt: string;
+}
+
+export interface NetWorthSnapshot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  assetsTotal: number;
+  liabilitiesTotal: number;
+  netWorth: number;
+  notes?: string;
+}
+
+export interface CashFlowEvent {
+  id: string;
+  title: string;
+  type: 'income' | 'expense';
+  category: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  sourceType: 'salary' | 'recurring' | 'subscription' | 'loan_emi' | 'goal_saving' | 'other';
+  sourceId?: string;
+  account?: string;
+  isPaid?: boolean;
+}
+
+export interface CashFlowDayProjection {
+  date: string; // YYYY-MM-DD
+  dayLabel: string; // e.g. "Sat, Sep 5"
+  projectedBalance: number;
+  inflows: number;
+  outflows: number;
+  netDelta: number;
+  events: CashFlowEvent[];
+  isPayday?: boolean;
+  isLowestDip?: boolean;
+}
+
 export interface Settings {
   categories: string[];
   accounts: string[];
@@ -124,11 +200,19 @@ export interface Settings {
   subscriptions: SubscriptionItem[];
   recurring: RecurringItem[];
   loans: Loan[];
+  assets: Asset[];
+  liabilities: Liability[];
+  netWorthHistory: NetWorthSnapshot[];
+  includeLoansInLiabilities: boolean;
   dismissedPatterns: string[];
   assetsTotal: number;
   liabilitiesTotal: number;
   netWorthConfigured: boolean;
   selectedPeriod: DatePeriod;
+  expectedMonthlyIncome?: number;
+  incomePayday?: number; // 1-31
+  safetyBufferAmount?: number;
+  forecastDays?: number; // 30, 60, 90
   driveProvider?: 'onedrive' | 'google-drive';
   driveFolderName: string;
   driveFolderId: string;
@@ -183,11 +267,19 @@ export const DEFAULT_SETTINGS: Settings = {
   subscriptions: [],
   recurring: [],
   loans: [],
+  assets: [],
+  liabilities: [],
+  netWorthHistory: [],
+  includeLoansInLiabilities: true,
   dismissedPatterns: [],
   assetsTotal: 0,
   liabilitiesTotal: 0,
   netWorthConfigured: false,
   selectedPeriod: 'all-time',
+  expectedMonthlyIncome: 104959,
+  incomePayday: 1,
+  safetyBufferAmount: 10000,
+  forecastDays: 30,
   driveFolderName: 'Ledgerly Financial Inbox',
   driveFolderId: 'ledgerly_inbox_folder_default',
   driveFolderUrl: 'https://drive.google.com/drive/folders/ledgerly_inbox_folder',
@@ -204,6 +296,8 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export type ActiveTab =
   | 'dashboard'
+  | 'cash-flow'
+  | 'net-worth'
   | 'transactions'
   | 'recurring'
   | 'subscriptions'
