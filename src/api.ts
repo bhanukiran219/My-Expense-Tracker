@@ -85,6 +85,25 @@ export async function setupMasterAccount(
   return data;
 }
 
+export async function registerUser(
+  password: string,
+  username: string
+): Promise<{ success: boolean; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Registration failed.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
 export async function login(
   password: string,
   username?: string

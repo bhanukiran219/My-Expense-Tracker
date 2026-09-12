@@ -15,9 +15,11 @@ import {
   HelpCircle,
   X,
   ExternalLink,
+  UserPlus,
 } from 'lucide-react';
 import {
   login,
+  registerUser,
   setupMasterAccount,
   getAuthConfig,
   loginWithGoogle,
@@ -52,6 +54,7 @@ const GoogleLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
 );
 
 export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) => {
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(isSetupMode ? 'register' : 'login');
   const [username, setUsername] = useState(isSetupMode ? 'Admin' : '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -162,7 +165,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
       return;
     }
 
-    if (isSetupMode) {
+    if (isSetupMode || authMode === 'register') {
+      if (authMode === 'register' && !username.trim()) {
+        setError('Please enter your name or a username.');
+        return;
+      }
       if (password.length < 4) {
         setError('Password must be at least 4 characters long.');
         return;
@@ -176,10 +183,13 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
     setLoading(true);
     try {
       if (isSetupMode) {
-        const res = await setupMasterAccount(password, username);
+        const res = await setupMasterAccount(password, username || 'Admin');
+        onSuccess(res.user);
+      } else if (authMode === 'register') {
+        const res = await registerUser(password, username.trim());
         onSuccess(res.user);
       } else {
-        const res = await login(password, username || undefined);
+        const res = await login(password, username.trim() || undefined);
         onSuccess(res.user);
       }
     } catch (err: any) {
@@ -203,7 +213,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
         className="w-full max-w-md relative z-10 bg-slate-900/80 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-violet-950/40"
       >
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-6">
+        <div className="flex flex-col items-center text-center mb-5">
           <div className="relative mb-3">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
               <WalletCards className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
@@ -217,14 +227,48 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
             LEDGERLY EXPENSE TRACKER
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            {isSetupMode ? 'Create Master Passcode' : 'Unlock Your Vault'}
+            {isSetupMode
+              ? 'Create Master Passcode'
+              : authMode === 'register'
+              ? 'Create Your Account'
+              : 'Unlock Your Vault'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xs">
             {isSetupMode
               ? 'Protect your personal finances with a secure password or Google account.'
-              : 'Sign in with your Google account or enter your master passcode.'}
+              : authMode === 'register'
+              ? 'Start tracking your expenses with your own private, encrypted vault.'
+              : 'Sign in with your Google account or enter your credentials.'}
           </p>
         </div>
+
+        {/* Tab Switcher: Sign In vs Create Account */}
+        {!isSetupMode && (
+          <div className="flex items-center p-1 bg-slate-950/70 border border-slate-800 rounded-xl mb-5">
+            <button
+              type="button"
+              onClick={() => { setAuthMode('login'); setError(null); }}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                authMode === 'login'
+                  ? 'bg-violet-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthMode('register'); setError(null); }}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                authMode === 'register'
+                  ? 'bg-violet-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+        )}
 
         {/* Google Sign-In Button */}
         <div className="mb-5">
@@ -243,13 +287,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
               <span>Continue with Google</span>
             </motion.button>
           )}
+          <div className="flex items-center justify-center gap-1.5 mt-2 text-[11px] text-emerald-400 font-medium">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Recommended: Instant 1-click account with Google</span>
+          </div>
         </div>
 
         {/* Divider */}
         <div className="relative flex items-center justify-center mb-5">
           <div className="border-t border-slate-800 w-full" />
-          <span className="bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-            Or with password
+          <span className="bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider text-center">
+            {authMode === 'register' ? 'Or register with password' : 'Or with password'}
           </span>
           <div className="border-t border-slate-800 w-full" />
         </div>
@@ -273,17 +321,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
 
         {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Username (in setup mode) */}
-          {isSetupMode && (
+          {/* Username Field */}
+          {(isSetupMode || authMode === 'register' || authMode === 'login') && (
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Admin Username
+                {isSetupMode
+                  ? 'Admin Username'
+                  : authMode === 'register'
+                  ? 'Your Name or Username'
+                  : 'Username'}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. Admin or your name"
+                placeholder={
+                  isSetupMode
+                    ? 'e.g. Admin or your name'
+                    : authMode === 'register'
+                    ? 'e.g. Rahul'
+                    : 'Username (optional for owner)'
+                }
                 className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                 disabled={loading}
               />
@@ -294,10 +352,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-slate-300">
-                {isSetupMode ? 'Master Password' : 'Password'}
+                {isSetupMode ? 'Master Password' : authMode === 'register' ? 'Create Password' : 'Password'}
               </label>
               <span className="text-[11px] text-slate-500">
-                {isSetupMode ? 'Min. 4 characters' : ''}
+                {(isSetupMode || authMode === 'register') ? 'Min. 4 characters' : ''}
               </span>
             </div>
             <div className="relative">
@@ -305,7 +363,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={isSetupMode ? 'Create a secure password' : 'Enter your password'}
+                placeholder={
+                  isSetupMode || authMode === 'register'
+                    ? 'Create a secure password'
+                    : 'Enter your password'
+                }
                 autoFocus={!googleClientId}
                 className="w-full pl-4 pr-11 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                 disabled={loading}
@@ -322,11 +384,11 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
             </div>
           </div>
 
-          {/* Confirm Password (only in setup mode) */}
-          {isSetupMode && (
+          {/* Confirm Password (only in setup or register mode) */}
+          {(isSetupMode || authMode === 'register') && (
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Confirm Master Password
+                Confirm Password
               </label>
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -356,15 +418,49 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
                     <span>Initialize Vault & Enter</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
+                ) : authMode === 'register' ? (
+                  <>
+                    <UserPlus className="w-4 h-4" />
+                    <span>Create Account & Enter</span>
+                  </>
                 ) : (
                   <>
                     <Unlock className="w-4 h-4" />
-                    <span>Unlock with Password</span>
+                    <span>Unlock Vault</span>
                   </>
                 )}
               </>
             )}
           </motion.button>
+
+          {/* Switch link */}
+          {!isSetupMode && (
+            <div className="text-center pt-2">
+              {authMode === 'login' ? (
+                <p className="text-xs text-slate-400">
+                  New to Ledgerly?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('register'); setError(null); }}
+                    className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Create an account
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('login'); setError(null); }}
+                    className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
         </form>
 
         {/* Footer info */}

@@ -111,6 +111,43 @@ router.post('/auth/setup', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/auth/register (For new users/friends to create their own account)
+router.post('/auth/register', async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !username.trim()) {
+      return res.status(400).json({ success: false, error: 'Please choose a username.' });
+    }
+    if (!password || password.length < 4) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 4 characters long.' });
+    }
+
+    const trimmed = username.trim();
+    const existing = await db.getUserByUsername(trimmed);
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        error: `Username "${trimmed}" is already taken. Please choose another username.`,
+      });
+    }
+
+    const newUser = await db.createUser(trimmed, password);
+    const token = await db.createSession(newUser.id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+      },
+    });
+  } catch (err: any) {
+    console.error('Error in auth register:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/auth/login
 router.post('/auth/login', async (req: Request, res: Response) => {
   try {
