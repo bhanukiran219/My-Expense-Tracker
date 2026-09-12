@@ -655,19 +655,18 @@ export class SupabaseDatabase {
         }
       }
 
-      // If user has no settings yet, populate defaults
+      // If user has no settings yet or is missing keys, populate defaults without overwriting
       const defaults = getDefaultSettings();
-      let hasNewDefaults = false;
+      const missingDefaults: Record<string, any> = {};
       for (const [k, v] of Object.entries(defaults)) {
         if (result[k] === undefined) {
           result[k] = v;
-          hasNewDefaults = true;
+          missingDefaults[k] = v;
         }
       }
 
-      if (hasNewDefaults) {
-        // Save defaults in background
-        this.updatePreferences(userId, defaults).catch(console.error);
+      if (Object.keys(missingDefaults).length > 0) {
+        this.updatePreferences(userId, missingDefaults).catch(console.error);
       }
 
       if (!result.driveProvider) result.driveProvider = 'onedrive';

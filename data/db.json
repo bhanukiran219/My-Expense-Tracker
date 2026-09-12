@@ -2286,7 +2286,11 @@
           "value": 92259,
           "updatedAt": "2026-08-29"
         }
-      ]
+      ],
+      "expectedMonthlyIncome": 104959,
+      "incomePayday": 1,
+      "safetyBufferAmount": 15000,
+      "forecastDays": 30
     },
     "test_new_user_123": {
       "categories": [
