@@ -177,11 +177,24 @@ export async function fetchState(): Promise<AppState> {
     throw new Error(`Failed to fetch state: ${res.statusText}`);
   }
   const data = await res.json();
+  const rawSettings = data.settings || {};
   return {
     transactions: data.transactions || [],
     tags: data.tags || [],
     rules: data.rules || [],
-    settings: data.settings || {},
+    settings: {
+      categories: rawSettings.categories || [],
+      accounts: rawSettings.accounts || [],
+      budgets: rawSettings.budgets || [],
+      recurring: rawSettings.recurring || [],
+      subscriptions: rawSettings.subscriptions || [],
+      goals: rawSettings.goals || [],
+      loans: rawSettings.loans || [],
+      assets: rawSettings.assets || [],
+      liabilities: rawSettings.liabilities || [],
+      netWorthHistory: rawSettings.netWorthHistory || [],
+      ...rawSettings,
+    },
     documents: data.documents || [],
   };
 }

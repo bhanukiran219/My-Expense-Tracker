@@ -482,7 +482,45 @@ export class LocalDatabase {
   // --- Settings ---
   public async getSettings(userId: string): Promise<Record<string, any>> {
     if (!this.state.settings[userId]) {
-      this.state.settings[userId] = {};
+      this.state.settings[userId] = {
+        categories: [
+          'Housing',
+          'Groceries',
+          'Dining',
+          'Shopping',
+          'Transportation',
+          'Utilities',
+          'Subscriptions',
+          'Entertainment',
+          'Healthcare',
+          'Income',
+          'Other',
+        ],
+        accounts: [
+          'Main Checking',
+          'Savings Account',
+          'Credit Card',
+          'Cash',
+        ],
+        budgets: [],
+        recurring: [],
+        subscriptions: [],
+        goals: [],
+        loans: [],
+        assets: [],
+        liabilities: [],
+        netWorthHistory: [],
+        assetsTotal: 0,
+        liabilitiesTotal: 0,
+        netWorthConfigured: false,
+        expectedMonthlyIncome: 0,
+        incomePayday: 1,
+        safetyBufferAmount: 0,
+        forecastDays: 30,
+        driveProvider: 'onedrive',
+        driveFolderUrl: 'https://onedrive.live.com',
+      };
+      this.saveState();
     }
     const result = { ...this.state.settings[userId] };
     if (!result.driveProvider) result.driveProvider = 'onedrive';
