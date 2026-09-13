@@ -132,7 +132,7 @@ router.post('/auth/setup', async (req: Request, res: Response) => {
 // POST /api/auth/register (For new users/friends to create their own account)
 router.post('/auth/register', async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, recoveryQuestion, recoveryAnswer } = req.body;
     if (!username || !username.trim()) {
       return res.status(400).json({ success: false, error: 'Please choose a username.' });
     }
@@ -150,6 +150,12 @@ router.post('/auth/register', async (req: Request, res: Response) => {
     }
 
     const newUser = await db.createUser(trimmed, password);
+
+    // Save security question/PIN if provided
+    if (recoveryQuestion && recoveryAnswer) {
+      await db.setRecoveryConfig(newUser.id, recoveryQuestion, recoveryAnswer);
+    }
+
     const token = await db.createSession(newUser.id);
 
     res.json({
@@ -162,6 +168,88 @@ router.post('/auth/register', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('Error in auth register:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/auth/forgot-password/question (Get recovery question by username or email)
+router.post('/auth/forgot-password/question', async (req: Request, res: Response) => {
+  try {
+    const { username } = req.body;
+    if (!username || !username.trim()) {
+      return res.status(400).json({ success: false, error: 'Please enter your username or registered email.' });
+    }
+
+    const user = await db.getUserByUsernameOrEmail(username.trim());
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: `No account found for "${username.trim()}". Please check your spelling or create an account.`,
+      });
+    }
+
+    const recovery = await db.getRecoveryConfig(user.id);
+    const question = recovery?.question || 'What is your secret 4-digit PIN or primary bank name?';
+
+    res.json({
+      success: true,
+      username: user.username,
+      question,
+    });
+  } catch (err: any) {
+    console.error('Error getting recovery question:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/auth/forgot-password/reset (Verify recovery answer & reset password)
+router.post('/auth/forgot-password/reset', async (req: Request, res: Response) => {
+  try {
+    const { username, recoveryAnswer, newPassword } = req.body;
+    if (!username || !username.trim()) {
+      return res.status(400).json({ success: false, error: 'Username is required.' });
+    }
+    if (!recoveryAnswer || !recoveryAnswer.trim()) {
+      return res.status(400).json({ success: false, error: 'Please enter your security answer or recovery PIN.' });
+    }
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ success: false, error: 'New password must be at least 4 characters long.' });
+    }
+
+    const user = await db.getUserByUsernameOrEmail(username.trim());
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'Account not found.' });
+    }
+
+    const isMatch = await db.verifyRecoveryAnswer(user.id, recoveryAnswer.trim());
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Incorrect security answer or recovery PIN. Please try again.',
+      });
+    }
+
+    const updated = await db.updateUserPassword(user.id, newPassword);
+    if (!updated) {
+      return res.status(500).json({ success: false, error: 'Failed to update password. Please try again.' });
+    }
+
+    // Automatically log user in
+    const token = await db.createSession(user.id);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully! Vault unlocked.',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        picture: user.picture,
+      },
+    });
+  } catch (err: any) {
+    console.error('Error resetting password:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

@@ -841,6 +841,14 @@ export class SupabaseDatabase {
     }
   }
 
+  public async getUserByUsernameOrEmail(identifier: string): Promise<DBUser | null> {
+    const trimmed = (identifier || '').trim();
+    if (!trimmed) return null;
+    const user = await this.getUserByUsername(trimmed);
+    if (user) return user;
+    return await this.getUserByEmail(trimmed);
+  }
+
   public async createGoogleUser(googleId: string, email: string, name: string, picture?: string): Promise<DBUser> {
     const userId = `user_${crypto.randomBytes(8).toString('hex')}`;
     const newUser: DBUser = {
@@ -964,6 +972,62 @@ export class SupabaseDatabase {
     } catch (err) {
       console.error('Supabase deleteSession exception:', err);
     }
+  }
+
+  public async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
+    try {
+      const { hash, salt } = hashPassword(newPassword);
+      const { error } = await this.client
+        .from('users')
+        .update({
+          password_hash: hash,
+          salt: salt,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Supabase updateUserPassword error:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Supabase updateUserPassword exception:', err);
+      return false;
+    }
+  }
+
+  public async setRecoveryConfig(userId: string, question: string, answerOrPin: string): Promise<void> {
+    const cleanAnswer = (answerOrPin || '').trim().toLowerCase();
+    const answerHash = crypto.createHash('sha256').update(cleanAnswer).digest('hex');
+    await this.setSetting(userId, 'recovery_question', question.trim());
+    await this.setSetting(userId, 'recovery_answer_hash', answerHash);
+  }
+
+  public async getRecoveryConfig(userId: string): Promise<{ question: string; hasRecovery: boolean } | null> {
+    const settings = await this.getSettings(userId);
+    const question = settings.recovery_question || (userId === 'local-user' ? 'What is your secret 4-digit PIN or primary bank name?' : null);
+    if (!question) return null;
+    return {
+      question,
+      hasRecovery: true
+    };
+  }
+
+  public async verifyRecoveryAnswer(userId: string, answerOrPin: string): Promise<boolean> {
+    const cleanAnswer = (answerOrPin || '').trim().toLowerCase();
+    const settings = await this.getSettings(userId);
+    const storedHash = settings.recovery_answer_hash;
+
+    // For local-user default support: PIN 1234, icici, or bhanu if no custom answer is set yet
+    if (!storedHash && userId === 'local-user') {
+      if (cleanAnswer === '1234' || cleanAnswer === 'icici' || cleanAnswer === 'bhanu') {
+        return true;
+      }
+    }
+
+    if (!storedHash) return false;
+    const computedHash = crypto.createHash('sha256').update(cleanAnswer).digest('hex');
+    return storedHash === computedHash;
   }
 }
 
@@ -1442,6 +1506,14 @@ export class LocalDatabase {
     return users.find(u => u.email && u.email.toLowerCase() === email.trim().toLowerCase()) || null;
   }
 
+  public async getUserByUsernameOrEmail(identifier: string): Promise<DBUser | null> {
+    const trimmed = (identifier || '').trim();
+    if (!trimmed) return null;
+    const user = await this.getUserByUsername(trimmed);
+    if (user) return user;
+    return await this.getUserByEmail(trimmed);
+  }
+
   public async createGoogleUser(googleId: string, email: string, name: string, picture?: string): Promise<DBUser> {
     const userId = `user_${crypto.randomBytes(8).toString('hex')}`;
 
@@ -1531,6 +1603,52 @@ export class LocalDatabase {
     if (!this.state.sessions) return;
     this.state.sessions = this.state.sessions.filter(s => s.token !== token);
     this.saveState();
+  }
+
+  public async updateUserPassword(userId: string, newPassword: string): Promise<boolean> {
+    if (!this.state.users) return false;
+    const user = this.state.users.find(u => u.id === userId);
+    if (!user) return false;
+
+    const { hash, salt } = hashPassword(newPassword);
+    user.password_hash = hash;
+    user.salt = salt;
+    this.saveState();
+    return true;
+  }
+
+  public async setRecoveryConfig(userId: string, question: string, answerOrPin: string): Promise<void> {
+    const cleanAnswer = (answerOrPin || '').trim().toLowerCase();
+    const answerHash = crypto.createHash('sha256').update(cleanAnswer).digest('hex');
+    await this.setSetting(userId, 'recovery_question', question.trim());
+    await this.setSetting(userId, 'recovery_answer_hash', answerHash);
+  }
+
+  public async getRecoveryConfig(userId: string): Promise<{ question: string; hasRecovery: boolean } | null> {
+    const settings = await this.getSettings(userId);
+    const question = settings.recovery_question || (userId === 'local-user' ? 'What is your secret 4-digit PIN or primary bank name?' : null);
+    if (!question) return null;
+    return {
+      question,
+      hasRecovery: true
+    };
+  }
+
+  public async verifyRecoveryAnswer(userId: string, answerOrPin: string): Promise<boolean> {
+    const cleanAnswer = (answerOrPin || '').trim().toLowerCase();
+    const settings = await this.getSettings(userId);
+    const storedHash = settings.recovery_answer_hash;
+
+    // For local-user default support: PIN 1234, icici, or bhanu if no custom answer is set yet
+    if (!storedHash && userId === 'local-user') {
+      if (cleanAnswer === '1234' || cleanAnswer === 'icici' || cleanAnswer === 'bhanu') {
+        return true;
+      }
+    }
+
+    if (!storedHash) return false;
+    const computedHash = crypto.createHash('sha256').update(cleanAnswer).digest('hex');
+    return storedHash === computedHash;
   }
 }
 

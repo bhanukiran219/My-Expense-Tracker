@@ -89,17 +89,55 @@ export async function setupMasterAccount(
 
 export async function registerUser(
   password: string,
-  username: string
+  username: string,
+  recoveryQuestion?: string,
+  recoveryAnswer?: string
 ): Promise<{ success: boolean; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, recoveryQuestion, recoveryAnswer }),
   });
 
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Registration failed.');
+  }
+
+  setAuthToken(data.token);
+  return data;
+}
+
+export async function getRecoveryQuestion(
+  username: string
+): Promise<{ success: boolean; username: string; question: string }> {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password/question`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to find account or recovery question.');
+  }
+  return data;
+}
+
+export async function resetPasswordWithRecovery(
+  username: string,
+  recoveryAnswer: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string; token: string; user: { id: string; username: string; email?: string; picture?: string } }> {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, recoveryAnswer, newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Password reset failed.');
   }
 
   setAuthToken(data.token);
