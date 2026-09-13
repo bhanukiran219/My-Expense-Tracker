@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "ledgerly",
   "private": true,
   "main": "dist/functions.cjs",
   "version": "0.0.0",

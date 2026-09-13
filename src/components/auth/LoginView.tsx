@@ -11,9 +11,11 @@ import {
   AlertCircle,
   Sparkles,
   CheckCircle2,
-  WalletCards,
   UserPlus,
+  Info,
+  X,
 } from 'lucide-react';
+import { LedgerlyLogo } from '../brand/LedgerlyLogo';
 import {
   login,
   registerUser,
@@ -25,11 +27,12 @@ import {
 
 interface LoginViewProps {
   isSetupMode: boolean;
+  initialUserHint?: { username: string; email?: string; picture?: string } | null;
   onSuccess: (user: { id: string; username: string; email?: string; picture?: string }) => void;
 }
 
 // Official Google "G" Logo
-const GoogleLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+const GoogleLogo: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg className={className} viewBox="0 0 24 24">
     <path
       fill="#4285F4"
@@ -50,14 +53,56 @@ const GoogleLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' })
   </svg>
 );
 
-export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) => {
+const REMEMBERED_USER_KEY = 'ledgerly_remembered_user';
+
+export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, initialUserHint, onSuccess }) => {
+  const [rememberedUser, setRememberedUser] = useState<{ username: string; picture?: string; email?: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem(REMEMBERED_USER_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialUserHint || null;
+  });
+
   const [authMode, setAuthMode] = useState<'login' | 'register'>(isSetupMode ? 'register' : 'login');
-  const [username, setUsername] = useState(isSetupMode ? 'Admin' : '');
+  const [username, setUsername] = useState(() => {
+    if (isSetupMode) return 'Admin';
+    try {
+      const saved = localStorage.getItem(REMEMBERED_USER_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.username) return parsed.username;
+      }
+    } catch {}
+    return initialUserHint?.username || '';
+  });
+
+  useEffect(() => {
+    if (initialUserHint && !rememberedUser && !username) {
+      setRememberedUser(initialUserHint);
+      setUsername(initialUserHint.username);
+    }
+  }, [initialUserHint]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotHelp, setShowForgotHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleAuthSuccess = (user: { id: string; username: string; email?: string; picture?: string }) => {
+    try {
+      localStorage.setItem(
+        REMEMBERED_USER_KEY,
+        JSON.stringify({
+          username: user.username,
+          email: user.email,
+          picture: user.picture,
+        })
+      );
+    } catch {}
+    onSuccess(user);
+  };
 
   // Google OAuth Config
   const [googleClientId, setGoogleClientId] = useState<string>('');
@@ -90,7 +135,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
                 setError(null);
                 try {
                   const res = await loginWithGoogle(response.credential);
-                  onSuccess(res.user);
+                  handleAuthSuccess(res.user);
                 } catch (err: any) {
                   setError(err.message || 'Google authentication failed.');
                 } finally {
@@ -100,14 +145,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
             },
           });
 
-          // Render official Google button if container ref is available
           if (googleBtnContainerRef.current) {
+            googleBtnContainerRef.current.innerHTML = '';
             g.accounts.id.renderButton(googleBtnContainerRef.current, {
-              theme: 'filled_blue',
+              theme: 'filled_black',
               size: 'large',
-              shape: 'pill',
               width: 320,
               text: 'continue_with',
+              shape: 'pill',
             });
           }
 
@@ -131,7 +176,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
       try {
         (window as any).google.accounts.id.prompt();
       } catch {
-        setError('Google Sign-In prompt failed. Please try signing in with your username and password.');
+        setError('Google Sign-In prompt failed. Please try signing in with your email and password.');
       }
     } else {
       handleDemoGoogleLogin();
@@ -143,9 +188,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
     setError(null);
     try {
       const res = await loginWithGoogleDemo();
-      onSuccess(res.user);
+      handleAuthSuccess(res.user);
     } catch (err: any) {
-      setError(err.message || 'Google sign-in is not configured. Please use username and password.');
+      setError(err.message || 'Google sign-in is not configured. Please use email and password.');
     } finally {
       setLoading(false);
     }
@@ -162,7 +207,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
 
     if (isSetupMode || authMode === 'register') {
       if (authMode === 'register' && !username.trim()) {
-        setError('Please enter your name or a username.');
+        setError('Please enter your username.');
         return;
       }
       if (password.length < 4) {
@@ -179,13 +224,14 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
     try {
       if (isSetupMode) {
         const res = await setupMasterAccount(password, username || 'Admin');
-        onSuccess(res.user);
+        handleAuthSuccess(res.user);
       } else if (authMode === 'register') {
         const res = await registerUser(password, username.trim());
-        onSuccess(res.user);
+        handleAuthSuccess(res.user);
       } else {
-        const res = await login(password, username.trim() || undefined);
-        onSuccess(res.user);
+        const targetUsername = rememberedUser?.username || username.trim() || undefined;
+        const res = await login(password, targetUsername);
+        handleAuthSuccess(res.user);
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
@@ -202,99 +248,33 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
 
       {/* Main Login Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-md relative z-10 bg-slate-900/80 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-violet-950/40"
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[420px] relative z-10 bg-slate-900/80 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-violet-950/40"
       >
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center mb-5">
-          <div className="relative mb-3">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-              <WalletCards className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-900 border-2 border-slate-800 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
-            </div>
-          </div>
+        <div className="flex flex-col items-center text-center mb-6">
+          <LedgerlyLogo size="lg" className="mb-3.5" />
 
-          <span className="text-[10px] sm:text-[11px] font-bold tracking-widest text-violet-400 uppercase leading-none mb-1">
-            LEDGERLY EXPENSE TRACKER
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-[26px] font-bold text-white tracking-tight leading-snug">
             {isSetupMode
-              ? 'Create Master Passcode'
+              ? 'Create master passcode'
               : authMode === 'register'
-              ? 'Create Your Account'
-              : 'Unlock Your Vault'}
+              ? 'Create an account'
+              : rememberedUser?.username
+              ? `Welcome back, ${rememberedUser.username}`
+              : 'Welcome back'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xs">
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             {isSetupMode
-              ? 'Protect your personal finances with a secure password or Google account.'
+              ? 'Enter your username below to initialize your vault'
               : authMode === 'register'
-              ? 'Start tracking your expenses with your own private, encrypted vault.'
-              : 'Sign in with your Google account or enter your credentials.'}
+              ? 'Enter your username below to create your account'
+              : rememberedUser?.username
+              ? 'Enter your password to unlock your vault'
+              : 'Enter your username below to login to your account'}
           </p>
-        </div>
-
-        {/* Tab Switcher: Sign In vs Create Account */}
-        {!isSetupMode && (
-          <div className="flex items-center p-1 bg-slate-950/70 border border-slate-800 rounded-xl mb-5">
-            <button
-              type="button"
-              onClick={() => { setAuthMode('login'); setError(null); }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                authMode === 'login'
-                  ? 'bg-violet-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthMode('register'); setError(null); }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                authMode === 'register'
-                  ? 'bg-violet-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
-        )}
-
-        {/* Google Sign-In Button */}
-        <div className="mb-5">
-          {googleClientId ? (
-            <div className="flex justify-center" ref={googleBtnContainerRef} />
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={handleGoogleClick}
-              disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm shadow-md flex items-center justify-center gap-3 transition-all cursor-pointer border border-slate-200"
-            >
-              <GoogleLogo className="w-5 h-5 shrink-0" />
-              <span>Continue with Google</span>
-            </motion.button>
-          )}
-          <div className="flex items-center justify-center gap-1.5 mt-2 text-[11px] text-emerald-400 font-medium">
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>Recommended: Instant 1-click account with Google</span>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="relative flex items-center justify-center mb-5">
-          <div className="border-t border-slate-800 w-full" />
-          <span className="bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider text-center">
-            {authMode === 'register' ? 'Or register with password' : 'Or with password'}
-          </span>
-          <div className="border-t border-slate-800 w-full" />
         </div>
 
         {/* Error Notification */}
@@ -314,31 +294,98 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
           )}
         </AnimatePresence>
 
+        {/* Password Recovery Help Box */}
+        <AnimatePresence>
+          {showForgotHelp && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="p-3.5 rounded-xl bg-violet-950/40 border border-violet-800/60 text-xs text-violet-200">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-white">Password Recovery</p>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        If you linked your Google account, you can sign in directly via <strong className="text-white">Login with Google</strong> below. For offline vaults, reset your master passcode in server config.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotHelp(false)}
+                    className="text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Username Field */}
-          {(isSetupMode || authMode === 'register' || authMode === 'login') && (
+          {/* Username Section */}
+          {rememberedUser && authMode === 'login' && !isSetupMode ? (
+            <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/90 flex items-center justify-between gap-3 shadow-inner">
+              <div className="flex items-center gap-3 min-w-0">
+                {rememberedUser.picture ? (
+                  <img
+                    src={rememberedUser.picture}
+                    alt={rememberedUser.username}
+                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-500/40 shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-base shadow-sm shrink-0">
+                    {rememberedUser.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-white truncate">
+                      {rememberedUser.username}
+                    </p>
+                    <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-full shrink-0">
+                      Saved
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 truncate">
+                    {rememberedUser.email || 'Local vault account'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRememberedUser(null);
+                  setUsername('');
+                  try {
+                    localStorage.removeItem(REMEMBERED_USER_KEY);
+                  } catch {}
+                }}
+                className="text-xs text-violet-400 hover:text-violet-300 font-medium px-2.5 py-1.5 rounded-xl hover:bg-violet-500/10 transition-colors shrink-0 cursor-pointer border border-transparent hover:border-violet-500/20"
+              >
+                Switch
+              </button>
+            </div>
+          ) : (
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                {isSetupMode
-                  ? 'Admin Username'
-                  : authMode === 'register'
-                  ? 'Your Name or Username'
-                  : 'Username'}
+                Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={
-                  isSetupMode
-                    ? 'e.g. Admin or your name'
-                    : authMode === 'register'
-                    ? 'e.g. Rahul'
-                    : 'Username (optional for owner)'
-                }
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                placeholder="Enter your username"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                 disabled={loading}
+                autoFocus={!rememberedUser?.username && !googleClientId}
               />
             </div>
           )}
@@ -347,24 +394,33 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-slate-300">
-                {isSetupMode ? 'Master Password' : authMode === 'register' ? 'Create Password' : 'Password'}
+                Password
               </label>
-              <span className="text-[11px] text-slate-500">
-                {(isSetupMode || authMode === 'register') ? 'Min. 4 characters' : ''}
-              </span>
+              {authMode === 'login' && !isSetupMode ? (
+                <button
+                  type="button"
+                  onClick={() => setShowForgotHelp(!showForgotHelp)}
+                  className="text-xs text-slate-400 hover:text-violet-400 transition-colors cursor-pointer"
+                >
+                  Forgot your password?
+                </button>
+              ) : (
+                <span className="text-[11px] text-slate-500">Min. 4 characters</span>
+              )}
             </div>
+
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoFocus={!!rememberedUser?.username}
                 placeholder={
                   isSetupMode || authMode === 'register'
                     ? 'Create a secure password'
                     : 'Enter your password'
                 }
-                autoFocus={!googleClientId}
-                className="w-full pl-4 pr-11 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                 disabled={loading}
               />
               <button
@@ -390,7 +446,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-type your password"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
                 disabled={loading}
               />
             </div>
@@ -402,72 +458,104 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, onSuccess }) 
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
+            ) : isSetupMode ? (
               <>
-                {isSetupMode ? (
-                  <>
-                    <span>Initialize Vault & Enter</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : authMode === 'register' ? (
-                  <>
-                    <UserPlus className="w-4 h-4" />
-                    <span>Create Account & Enter</span>
-                  </>
-                ) : (
-                  <>
-                    <Unlock className="w-4 h-4" />
-                    <span>Unlock Vault</span>
-                  </>
-                )}
+                <span>Initialize Vault & Enter</span>
+                <ArrowRight className="w-4 h-4" />
               </>
+            ) : authMode === 'register' ? (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Sign up</span>
+              </>
+            ) : (
+              <span>Login</span>
             )}
           </motion.button>
-
-          {/* Switch link */}
-          {!isSetupMode && (
-            <div className="text-center pt-2">
-              {authMode === 'login' ? (
-                <p className="text-xs text-slate-400">
-                  New to Ledgerly?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('register'); setError(null); }}
-                    className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
-                  >
-                    Create an account
-                  </button>
-                </p>
-              ) : (
-                <p className="text-xs text-slate-400">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => { setAuthMode('login'); setError(null); }}
-                    className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              )}
-            </div>
-          )}
         </form>
 
-        {/* Footer info */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center justify-center text-[11px] text-slate-500">
-          <div className="flex items-center gap-1 text-slate-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+        {/* Divider */}
+        <div className="relative flex items-center justify-center my-4">
+          <div className="border-t border-slate-800 w-full" />
+          <span className="bg-slate-900/90 px-3 text-[11px] font-medium text-slate-400 whitespace-nowrap">
+            Or continue with
+          </span>
+          <div className="border-t border-slate-800 w-full" />
+        </div>
+
+        {/* Google Sign-In Button */}
+        <div>
+          {googleClientId ? (
+            <div className="flex justify-center" ref={googleBtnContainerRef} />
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={handleGoogleClick}
+              disabled={loading}
+              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-medium text-sm shadow-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-slate-200"
+            >
+              <GoogleLogo className="w-4 h-4 shrink-0" />
+              <span>Login with Google</span>
+            </motion.button>
+          )}
+        </div>
+
+        {/* Switch Link: Sign up vs Sign in */}
+        {!isSetupMode && (
+          <div className="text-center mt-5">
+            {authMode === 'login' ? (
+              <p className="text-xs text-slate-400">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('register'); setError(null); setShowForgotHelp(false); }}
+                  className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  Sign up
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setError(null); setShowForgotHelp(false); }}
+                  className="text-violet-400 hover:text-violet-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  Sign in
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Legal Disclaimer */}
+        <p className="text-[11px] text-slate-500 text-center mt-4 leading-relaxed">
+          By clicking continue, you agree to our{' '}
+          <span className="underline underline-offset-2 text-slate-400 cursor-pointer hover:text-slate-300">
+            Terms of Service
+          </span>{' '}
+          and{' '}
+          <span className="underline underline-offset-2 text-slate-400 cursor-pointer hover:text-slate-300">
+            Privacy Policy
+          </span>
+          .
+        </p>
+
+        {/* Private Vault Badge */}
+        <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-center text-[11px] text-slate-500">
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>Private Financial Vault</span>
           </div>
         </div>
       </motion.div>
-
-
     </div>
   );
 };

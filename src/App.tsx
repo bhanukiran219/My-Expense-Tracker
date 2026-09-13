@@ -82,6 +82,7 @@ export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSetupNeeded, setIsSetupNeeded] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; username: string; email?: string; picture?: string } | null>(null);
+  const [initialUserHint, setInitialUserHint] = useState<{ username: string; email?: string; picture?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [period, setPeriod] = useState<DatePeriod>('this-month');
   const [hiddenTxIds, setHiddenTxIds] = useState<Set<string>>(new Set());
@@ -235,8 +236,21 @@ export const App: React.FC = () => {
         if (!isMounted) return;
         setIsSetupNeeded(!status.initialized);
         setIsAuthenticated(status.authenticated);
+        if (status.userHint) {
+          setInitialUserHint(status.userHint);
+        }
         if (status.user) {
           setCurrentUser(status.user);
+          try {
+            localStorage.setItem(
+              'ledgerly_remembered_user',
+              JSON.stringify({
+                username: status.user.username,
+                email: status.user.email,
+                picture: status.user.picture,
+              })
+            );
+          } catch {}
         }
         if (status.authenticated) {
           await loadState(true);
@@ -284,6 +298,7 @@ export const App: React.FC = () => {
     return (
       <LoginView
         isSetupMode={isSetupNeeded}
+        initialUserHint={initialUserHint}
         onSuccess={(user) => {
           setIsAuthenticated(true);
           setIsSetupNeeded(false);
@@ -959,7 +974,7 @@ export const App: React.FC = () => {
       />
 
       {/* 2. MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 md:pl-64">
+      <div className="flex-1 flex flex-col min-w-0 md:pl-72">
         {/* TOP BAR */}
         <TopBar
           activeTab={activeTab}

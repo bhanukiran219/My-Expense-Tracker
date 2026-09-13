@@ -37,11 +37,28 @@ router.get('/auth/status', async (req: Request, res: Response) => {
       ? authHeader.substring(7)
       : (req.query.token as string) || null;
 
+    const getUserHint = async () => {
+      try {
+        if (userCount === 1) {
+          const first = await db.getFirstUser();
+          if (first) {
+            return {
+              username: first.username,
+              email: first.email,
+              picture: first.picture,
+            };
+          }
+        }
+      } catch {}
+      return null;
+    };
+
     if (!token) {
       return res.json({
         success: true,
         initialized: !isSetupRequired,
         authenticated: false,
+        userHint: await getUserHint(),
       });
     }
 
@@ -51,6 +68,7 @@ router.get('/auth/status', async (req: Request, res: Response) => {
         success: true,
         initialized: !isSetupRequired,
         authenticated: false,
+        userHint: await getUserHint(),
       });
     }
 
@@ -182,7 +200,11 @@ router.post('/auth/login', async (req: Request, res: Response) => {
 
     let user = null;
     if (username && username.trim()) {
-      user = await db.getUserByUsername(username.trim());
+      const identifier = username.trim();
+      user = await db.getUserByUsername(identifier);
+      if (!user) {
+        user = await db.getUserByEmail(identifier);
+      }
     } else {
       // If only one user exists, allow password-only unlock
       user = await db.getFirstUser();

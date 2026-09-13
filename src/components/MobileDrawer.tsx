@@ -19,6 +19,7 @@ import {
   Upload,
   Lock,
 } from 'lucide-react';
+import { LedgerlyGlyph } from './brand/LedgerlyLogo';
 import { ActiveTab } from '../types';
 import { getNavIconVariants } from './navIconVariants';
 
@@ -119,7 +120,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 }}
               >
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-700 via-violet-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-violet-200">
-                  <ShieldCheck className="w-6 h-6 drop-shadow-sm" />
+                  <LedgerlyGlyph className="w-5.5 h-5.5 drop-shadow-sm text-white" />
                 </div>
                 <div>
                   <h1 className="font-bold text-base text-slate-900 tracking-tight leading-tight flex flex-col">

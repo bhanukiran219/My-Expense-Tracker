@@ -16,6 +16,7 @@ import {
   CalendarClock,
   Lock,
 } from 'lucide-react';
+import { LedgerlyGlyph } from './brand/LedgerlyLogo';
 import { ActiveTab } from '../types';
 import { getNavIconVariants } from './navIconVariants';
 
@@ -54,10 +55,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-screen fixed top-0 left-0 shrink-0 select-none z-20 shadow-sm">
+    <aside className="hidden md:flex flex-col w-64 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl h-[calc(100vh-2rem)] fixed top-4 left-4 shrink-0 select-none z-30 shadow-[0_12px_36px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04)] overflow-hidden transition-all">
       {/* Brand Header */}
       <motion.div
-        className="h-[76px] flex items-center px-6 border-b border-slate-100 cursor-pointer group"
+        className="h-[74px] flex items-center px-5 border-b border-slate-100/90 cursor-pointer group shrink-0 bg-white/80"
         initial="idle"
         whileHover="hover"
         whileTap="tap"
@@ -68,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             variants={getNavIconVariants('brand')}
             className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-700 via-violet-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-violet-200 group-hover:shadow-lg group-hover:shadow-violet-300/60 transition-shadow"
           >
-            <ShieldCheck className="w-6 h-6 drop-shadow-sm" />
+            <LedgerlyGlyph className="w-5.5 h-5.5 drop-shadow-sm text-white" />
           </motion.div>
           <div>
             <h1 className="font-bold text-base text-slate-900 tracking-tight leading-tight flex flex-col">
@@ -81,8 +82,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </motion.div>
 
-      {/* Nav List */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Nav List with custom sleek scrollbar */}
+      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto custom-sidebar-scroll">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -94,25 +95,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               id={`nav-btn-${item.id}`}
               onClick={() => onSelectTab(item.id)}
               initial="idle"
-              whileHover="hover"
-              whileTap="tap"
+              whileHover={{ x: isActive ? 0 : 2 }}
+              whileTap={{ scale: 0.98 }}
               animate={isActive ? 'active' : 'idle'}
-              className={`relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors group cursor-pointer ${
+              className={`relative w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
                 isActive
-                  ? 'text-violet-700 font-semibold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'text-violet-800 font-bold -translate-y-0.5'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/80'
               }`}
             >
-              {/* Animated active pill background */}
+              {/* Floating elevated active tab background */}
               {isActive && (
                 <motion.div
                   layoutId="sidebarActiveBackground"
-                  className="absolute inset-0 bg-violet-50/90 rounded-xl border border-violet-100 shadow-xs"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
+                  className="absolute inset-0 bg-white rounded-xl border border-violet-200/90 shadow-[0_4px_14px_rgba(124,58,237,0.13),0_1px_3px_rgba(0,0,0,0.05)] ring-1 ring-violet-500/10"
+                  transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                >
+                  {/* Glowing left accent pill indicator */}
+                  <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-4.5 rounded-full bg-gradient-to-b from-violet-500 to-indigo-600 shadow-[0_0_8px_rgba(124,58,237,0.5)]" />
+                </motion.div>
               )}
 
-              <div className="relative z-10 flex items-center gap-3">
+              <div className="relative z-10 flex items-center gap-3 pl-1.5">
                 <motion.div
                   variants={getNavIconVariants(item.id)}
                   className={`flex items-center justify-center p-1 rounded-lg transition-colors ${
@@ -139,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   className={`relative z-10 text-[11px] px-2 py-0.5 rounded-full font-bold transition-all ${
-                    isActive ? 'bg-violet-200 text-violet-800' : 'bg-slate-100 text-slate-600 group-hover:bg-violet-100 group-hover:text-violet-700'
+                    isActive ? 'bg-violet-100 text-violet-700 border border-violet-200/60 shadow-2xs' : 'bg-slate-100 text-slate-600 group-hover:bg-violet-100 group-hover:text-violet-700'
                   }`}
                 >
                   {item.badge}
@@ -151,8 +155,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer Info */}
-      <div className="p-4 border-t border-slate-100">
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 transition-colors">
+      <div className="p-3.5 border-t border-slate-100 bg-slate-50/70 shrink-0">
+        <div className="p-3 rounded-xl bg-white border border-slate-200/80 hover:border-violet-200 shadow-2xs transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
             <span className="font-medium text-slate-700">Private Vault</span>
             <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1.5">
@@ -169,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {currentUser && (
-          <div className="mt-3 p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
+          <div className="mt-2.5 p-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center gap-2.5">
             {currentUser.picture ? (
               <img
                 src={currentUser.picture}
@@ -198,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="w-full mt-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer group active:scale-98"
+            className="w-full mt-2 px-3 py-2 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 shadow-2xs text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer group active:scale-98"
             title="Lock your session and require password to re-enter"
           >
             <Lock className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition-colors" />

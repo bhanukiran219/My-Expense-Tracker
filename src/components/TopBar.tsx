@@ -41,7 +41,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onLogout,
 }) => {
   return (
-    <header className="sticky top-0 z-20 h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-4 md:px-8 flex items-center justify-between transition-all">
+    <header className="sticky top-0 md:top-4 z-20 h-16 sm:h-20 bg-white/95 backdrop-blur-md border-b md:border border-slate-200/80 px-3.5 sm:px-5 md:px-5 lg:px-8 md:mr-4 md:mt-4 md:rounded-2xl md:shadow-[0_4px_20px_rgba(15,23,42,0.04)] flex items-center justify-between transition-all">
       {/* Title / Tab Name with Hamburger Menu on Mobile */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 mr-2">
         {onOpenMobileMenu && (
@@ -60,14 +60,14 @@ export const TopBar: React.FC<TopBarProps> = ({
           <span className="text-[9px] sm:text-[11px] font-bold tracking-wider text-slate-400 uppercase truncate leading-none mb-0.5">
             YOUR MONEY, CLEARLY
           </span>
-          <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">
             {TAB_TITLES[activeTab] || 'Dashboard'}
           </h2>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Lock Vault Button */}
         {onLogout && (
           <button
@@ -79,7 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs md:text-sm font-medium rounded-xl text-slate-700 hover:text-rose-600 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 shadow-2xs transition active:scale-98 cursor-pointer"
           >
             <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 hover:text-rose-500" />
-            <span className="hidden sm:inline">Lock</span>
+            <span className="hidden lg:inline">Lock</span>
           </button>
         )}
 
@@ -90,7 +90,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-xs md:text-sm font-medium rounded-xl text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-xs transition active:scale-98"
         >
           <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />
-          <span className="hidden sm:inline">Import</span>
+          <span className="hidden lg:inline">Import</span>
         </button>
 
         {/* Add Entry Button */}

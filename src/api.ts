@@ -49,6 +49,7 @@ export async function checkAuthStatus(): Promise<{
   initialized: boolean;
   authenticated: boolean;
   user?: { id: string; username: string; email?: string; picture?: string };
+  userHint?: { username: string; email?: string; picture?: string } | null;
 }> {
   try {
     const res = await authFetch(`${BASE_URL}/auth/status`, { cache: 'no-store' });
@@ -60,6 +61,7 @@ export async function checkAuthStatus(): Promise<{
       initialized: data.initialized ?? true,
       authenticated: data.authenticated ?? false,
       user: data.user,
+      userHint: data.userHint ?? null,
     };
   } catch {
     return { initialized: true, authenticated: false };
