@@ -492,8 +492,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ isSetupMode, initialUserHi
                     disabled={loading}
                     autoFocus
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Not case-sensitive. Default PIN for <strong className="text-slate-300">bhanu</strong> is <strong className="text-emerald-400">1234</strong>.
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                    Enter your 4-digit PIN or answer. If you have not created a custom PIN yet, you can enter <strong className="text-emerald-400 font-semibold">1234</strong>, your username, or registered email.
                   </p>
                 </div>
 

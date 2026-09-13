@@ -509,6 +509,42 @@ function formatTransaction(tx: any) {
   };
 }
 
+// GET /api/user/recovery-config (Get current user's recovery config)
+router.get('/user/recovery-config', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const config = await db.getRecoveryConfig(userId);
+    res.json({
+      success: true,
+      question: config?.question || 'What is your secret 4-digit PIN?',
+      hasRecovery: !!config?.hasRecovery,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/user/recovery-config (Update current user's recovery PIN / question)
+router.post('/user/recovery-config', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { question, answer } = req.body;
+    if (!question || !question.trim()) {
+      return res.status(400).json({ success: false, error: 'Security question is required.' });
+    }
+    if (!answer || !answer.trim()) {
+      return res.status(400).json({ success: false, error: 'Recovery PIN or answer is required.' });
+    }
+    await db.setRecoveryConfig(userId, question.trim(), answer.trim());
+    res.json({
+      success: true,
+      message: '4-digit recovery PIN and security question saved successfully!',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 1. GET /api/state
 router.get('/state', async (req: Request, res: Response) => {
   try {

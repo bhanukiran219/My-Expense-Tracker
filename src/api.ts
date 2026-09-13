@@ -144,6 +144,34 @@ export async function resetPasswordWithRecovery(
   return data;
 }
 
+export async function getUserRecoveryConfig(): Promise<{ success: boolean; question: string; hasRecovery: boolean }> {
+  try {
+    const res = await authFetch(`${BASE_URL}/user/recovery-config`);
+    if (!res.ok) {
+      return { success: false, question: 'What is your secret 4-digit PIN?', hasRecovery: false };
+    }
+    return await res.json();
+  } catch {
+    return { success: false, question: 'What is your secret 4-digit PIN?', hasRecovery: false };
+  }
+}
+
+export async function saveUserRecoveryConfig(
+  question: string,
+  answer: string
+): Promise<{ success: boolean; message: string }> {
+  const res = await authFetch(`${BASE_URL}/user/recovery-config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, answer }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to save recovery configuration.');
+  }
+  return data;
+}
+
 export async function login(
   password: string,
   username?: string

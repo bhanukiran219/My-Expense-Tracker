@@ -10,9 +10,13 @@ import {
   AlertTriangle,
   RotateCcw,
   Sparkles,
+  KeyRound,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 import { AppState, Settings, STARTER_CATEGORIES, STARTER_ACCOUNTS } from '../types';
 import { formatCurrency, deduplicateList } from '../utils/currency';
+import { getUserRecoveryConfig, saveUserRecoveryConfig } from '../api';
 
 interface SettingsViewProps {
   state: AppState;
@@ -58,6 +62,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       setCategories(deduplicateList(settings.categories));
     }
   }, [settings?.categories]);
+
+  // Security Recovery PIN state
+  const [recoveryQuestion, setRecoveryQuestion] = useState('What is your secret 4-digit PIN?');
+  const [customQuestion, setCustomQuestion] = useState('');
+  const [recoveryPin, setRecoveryPin] = useState('');
+  const [hasCustomRecovery, setHasCustomRecovery] = useState(false);
+  const [isSavingRecovery, setIsSavingRecovery] = useState(false);
+  const [recoverySaveSuccess, setRecoverySaveSuccess] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getUserRecoveryConfig().then((cfg) => {
+      if (cfg?.question) {
+        setRecoveryQuestion(cfg.question);
+      }
+      setHasCustomRecovery(!!cfg?.hasRecovery);
+    });
+  }, []);
+
+  const handleSaveRecoveryPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+    if (!recoveryPin.trim()) {
+      setRecoveryError('Please enter a 4-digit PIN or secret answer.');
+      return;
+    }
+    const finalQ = recoveryQuestion === 'Custom question...' ? customQuestion.trim() : recoveryQuestion;
+    if (!finalQ) {
+      setRecoveryError('Please select or specify a security question.');
+      return;
+    }
+
+    setIsSavingRecovery(true);
+    try {
+      await saveUserRecoveryConfig(finalQ, recoveryPin.trim());
+      setHasCustomRecovery(true);
+      setRecoverySaveSuccess(true);
+      setRecoveryPin('');
+      setTimeout(() => setRecoverySaveSuccess(false), 3500);
+    } catch (err: any) {
+      setRecoveryError(err.message || 'Failed to save recovery configuration.');
+    } finally {
+      setIsSavingRecovery(false);
+    }
+  };
 
   const parsedAssets = parseFloat(assets) || 0;
   const parsedLiabilities = parseFloat(liabilities) || 0;
@@ -287,7 +336,123 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* 4. DATABASE & STORAGE ENGINE STATUS */}
+      {/* 4. SECURITY & 4-DIGIT RECOVERY PIN */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+              <KeyRound className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                Security & 4-Digit Recovery PIN
+              </h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">
+                Set or update your 4-digit PIN to reset your password without Google
+              </p>
+            </div>
+          </div>
+
+          <div>
+            {hasCustomRecovery ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                Custom PIN Active
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                Default PIN Active (1234)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {recoverySaveSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-xs text-emerald-800 font-medium">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Your 4-digit recovery PIN has been saved! You can now use it on the Forgot Password screen.</span>
+          </div>
+        )}
+
+        {recoveryError && (
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-xs text-rose-800 font-medium">
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{recoveryError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSaveRecoveryPin} className="space-y-4 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Security Question
+              </label>
+              <select
+                value={recoveryQuestion}
+                onChange={(e) => setRecoveryQuestion(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              >
+                <option value="What is your secret 4-digit PIN?">What is your secret 4-digit PIN?</option>
+                <option value="What is your primary bank name (e.g. HDFC, ICICI, SBI)?">What is your primary bank name (e.g. HDFC, ICICI, SBI)?</option>
+                <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                <option value="What was the name of your first school?">What was the name of your first school?</option>
+                <option value="What city were you born in?">What city were you born in?</option>
+                <option value="Custom question...">Custom question...</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Set 4-Digit PIN or Answer
+              </label>
+              <input
+                type="text"
+                value={recoveryPin}
+                onChange={(e) => setRecoveryPin(e.target.value)}
+                placeholder="e.g. 1234 or your secret PIN"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+            </div>
+          </div>
+
+          {recoveryQuestion === 'Custom question...' && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Your Custom Question
+              </label>
+              <input
+                type="text"
+                value={customQuestion}
+                onChange={(e) => setCustomQuestion(e.target.value)}
+                placeholder="Enter your custom security question"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <p className="text-[11px] text-slate-500">
+              This PIN allows you to recover your account and reset your password if you ever forget it.
+            </p>
+            <button
+              type="submit"
+              disabled={isSavingRecovery}
+              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer disabled:opacity-60"
+            >
+              {isSavingRecovery ? (
+                <span>Saving...</span>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save 4-Digit PIN</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* 5. DATABASE & STORAGE ENGINE STATUS */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold shrink-0">
